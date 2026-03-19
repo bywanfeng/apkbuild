@@ -1,5 +1,7 @@
 package com.wanfeng.launcher.ui.screen
 
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
@@ -65,6 +67,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -74,7 +77,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.wanfeng.launcher.BuildConfig
 import com.wanfeng.launcher.ui.theme.AccentBlue
 import com.wanfeng.launcher.ui.theme.AccentGreen
 import com.wanfeng.launcher.ui.theme.AccentCyan
@@ -992,6 +994,26 @@ private fun WideActionCard(
     }
 }
 
+
+@Composable
+private fun rememberAppVersionName(): String {
+    val context = LocalContext.current
+    return remember(context) {
+        runCatching {
+            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.getPackageInfo(
+                    context.packageName,
+                    PackageManager.PackageInfoFlags.of(0)
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.getPackageInfo(context.packageName, 0)
+            }
+            packageInfo.versionName ?: "unknown"
+        }.getOrDefault("unknown")
+    }
+}
+
 @Composable
 private fun FooterRow(isDark: Boolean, busy: Boolean) {
     Card(
@@ -1011,7 +1033,7 @@ private fun FooterRow(isDark: Boolean, busy: Boolean) {
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(
-                    text = "晚风工作室 · v${BuildConfig.VERSION_NAME}",
+                    text = "晚风工作室 · v${rememberAppVersionName()}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
