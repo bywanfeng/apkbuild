@@ -19,7 +19,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -44,11 +43,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -63,12 +57,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -83,45 +74,180 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.wanfeng.launcher.ui.theme.AccentBlue
-import com.wanfeng.launcher.ui.theme.AccentCyan
-import com.wanfeng.launcher.ui.theme.AccentGreen
-import com.wanfeng.launcher.ui.theme.AccentIndigo
 import com.wanfeng.launcher.ui.theme.CardGreen
 import com.wanfeng.launcher.ui.theme.CardPurple
 import com.wanfeng.launcher.ui.theme.CardRed
 import com.wanfeng.launcher.ui.theme.DarkBg0
 import com.wanfeng.launcher.ui.theme.DarkBg100
 import com.wanfeng.launcher.ui.theme.DarkBg45
-import com.wanfeng.launcher.ui.theme.LaunchEnd
-import com.wanfeng.launcher.ui.theme.LaunchMid
-import com.wanfeng.launcher.ui.theme.LaunchStart
+import com.wanfeng.launcher.ui.theme.DarkAccentGreen
+import com.wanfeng.launcher.ui.theme.DarkPrimary
+import com.wanfeng.launcher.ui.theme.DarkSecondary
+import com.wanfeng.launcher.ui.theme.DarkTertiary
+import com.wanfeng.launcher.ui.theme.LaunchEndBlue
+import com.wanfeng.launcher.ui.theme.LaunchEndPurple
+import com.wanfeng.launcher.ui.theme.LaunchMidBlue
+import com.wanfeng.launcher.ui.theme.LaunchMidPurple
+import com.wanfeng.launcher.ui.theme.LaunchStartBlue
+import com.wanfeng.launcher.ui.theme.LaunchStartPurple
+import com.wanfeng.launcher.ui.theme.LightAccentGreen
 import com.wanfeng.launcher.ui.theme.LightBg0
 import com.wanfeng.launcher.ui.theme.LightBg100
 import com.wanfeng.launcher.ui.theme.LightBg50
+import com.wanfeng.launcher.ui.theme.LightPrimary
+import com.wanfeng.launcher.ui.theme.LightSecondary
+import com.wanfeng.launcher.ui.theme.LightTertiary
 import com.wanfeng.launcher.ui.theme.StatusAmber
 import com.wanfeng.launcher.ui.theme.StatusGreen
 import com.wanfeng.launcher.ui.theme.StatusRed
-import com.wanfeng.launcher.ui.theme.ToastBg
 import com.wanfeng.launcher.ui.theme.ToastText
 import kotlinx.coroutines.delay
 import java.util.Calendar
 
-// ─── 工具 ─────────────────────────────────────────────────────────────────────
 private fun Long.toComposeColor() = Color(this)
+private val SpringDefault = spring<Float>(
+    dampingRatio = Spring.DampingRatioMediumBouncy,
+    stiffness    = Spring.StiffnessMediumLow,
+)
+private val SpringSnappy = spring<Float>(
+    dampingRatio = Spring.DampingRatioLowBouncy,
+    stiffness    = Spring.StiffnessMedium,
+)
 
-// Liquid Glass 玻璃色系
-private val GlassWhiteHigh  = Color.White.copy(alpha = 0.18f)  // 高光层
-private val GlassWhiteMid   = Color.White.copy(alpha = 0.10f)  // 玻璃主体
-private val GlassWhiteLow   = Color.White.copy(alpha = 0.06f)  // 底层
-private val GlassEdge       = Color.White.copy(alpha = 0.30f)  // 边缘高光
-private val GlassEdgeDark   = Color.White.copy(alpha = 0.08f)  // 暗边
-private val GlassDark       = Color(0xFF1C2333).copy(alpha = 0.55f) // 暗色玻璃主体
-private val GlassDarkHigh   = Color.White.copy(alpha = 0.12f)
+// ── 主题色包：深色=紫，浅色=蓝 ───────────────────────────────────────────────
+private data class ThemePalette(
+    val primary:   Color,   // 主强调色
+    val secondary: Color,   // 次强调色
+    val tertiary:  Color,   // 第三色
+    val accent:    Color,   // 绿色
+    val launchStart: Color,
+    val launchMid:   Color,
+    val launchEnd:   Color,
+    // 玻璃层颜色
+    val glassHigh: Color,
+    val glassMid:  Color,
+    val glassLow:  Color,
+    val glassDark: Color,
+    val glassDarkHigh: Color,
+    // 背景
+    val bg0: Color, val bg45: Color, val bg100: Color,
+    // 文字
+    val textPrimary: Color,
+    val textSecondary: Color,
+)
 
-// Spring 动画规格
-private val SpringDefault   = spring<Float>(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow)
-private val SpringSnappy    = spring<Float>(dampingRatio = Spring.DampingRatioLowBouncy,    stiffness = Spring.StiffnessMedium)
+private fun themePalette(isDark: Boolean): ThemePalette = if (isDark) ThemePalette(
+    primary   = DarkPrimary,
+    secondary = DarkSecondary,
+    tertiary  = DarkTertiary,
+    accent    = DarkAccentGreen,
+    launchStart = LaunchStartPurple,
+    launchMid   = LaunchMidPurple,
+    launchEnd   = LaunchEndPurple,
+    glassHigh     = Color.White.copy(alpha = 0.12f),
+    glassMid      = Color.White.copy(alpha = 0.07f),
+    glassLow      = Color.White.copy(alpha = 0.04f),
+    glassDark     = Color(0xFF160D2A).copy(alpha = 0.58f),
+    glassDarkHigh = Color.White.copy(alpha = 0.10f),
+    bg0   = DarkBg0,
+    bg45  = DarkBg45,
+    bg100 = DarkBg100,
+    textPrimary   = Color.White.copy(alpha = 0.92f),
+    textSecondary = Color.White.copy(alpha = 0.50f),
+) else ThemePalette(
+    primary   = LightPrimary,
+    secondary = LightSecondary,
+    tertiary  = LightTertiary,
+    accent    = LightAccentGreen,
+    launchStart = LaunchStartBlue,
+    launchMid   = LaunchMidBlue,
+    launchEnd   = LaunchEndBlue,
+    glassHigh     = Color.White.copy(alpha = 0.18f),
+    glassMid      = Color.White.copy(alpha = 0.11f),
+    glassLow      = Color.White.copy(alpha = 0.06f),
+    glassDark     = Color.Transparent,
+    glassDarkHigh = Color.Transparent,
+    bg0   = LightBg0,
+    bg45  = LightBg50,
+    bg100 = LightBg100,
+    textPrimary   = Color(0xFF0D1E35),
+    textSecondary = Color(0xFF3C5A80).copy(alpha = 0.78f),
+)
+
+// ── Liquid Glass Modifier ─────────────────────────────────────────────────────
+private fun Modifier.liquidGlass(
+    p: ThemePalette,
+    isDark: Boolean,
+    cornerRadius: Dp = 24.dp,
+    tintColor: Color = Color.Transparent,
+): Modifier = this
+    .background(
+        brush = if (isDark) Brush.verticalGradient(colors = listOf(p.glassDarkHigh, p.glassDark, Color(0xFF0F0720).copy(alpha = 0.60f)))
+                else        Brush.verticalGradient(colors = listOf(p.glassHigh, p.glassMid, p.glassLow)),
+        shape = RoundedCornerShape(size = cornerRadius),
+    )
+    .then(
+        if (tintColor != Color.Transparent)
+            Modifier.background(
+                color = tintColor.copy(alpha = if (isDark) 0.14f else 0.07f),
+                shape = RoundedCornerShape(size = cornerRadius),
+            )
+        else Modifier
+    )
+    .drawWithContent {
+        drawContent()
+        val cr = cornerRadius.toPx()
+        // 顶部高光条
+        drawRoundRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    if (isDark) Color.White.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.55f),
+                    Color.Transparent,
+                ),
+                startY = 0f, endY = size.height * 0.40f,
+            ),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(cr, cr),
+            size = size,
+        )
+        // 边缘光
+        drawRoundRect(
+            brush = Brush.linearGradient(
+                colors = listOf(
+                    if (isDark) Color.White.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.75f),
+                    if (isDark) Color.White.copy(alpha = 0.06f) else Color.White.copy(alpha = 0.18f),
+                    if (isDark) Color.White.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.55f),
+                ),
+                start = Offset(0f, 0f), end = Offset(size.width, size.height),
+            ),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(cr, cr),
+            style = Stroke(width = 1.2.dp.toPx()),
+            size = size,
+        )
+    }
+
+private fun Modifier.glassChip(isDark: Boolean, accentColor: Color): Modifier = this
+    .background(
+        brush = Brush.verticalGradient(
+            colors = if (isDark) listOf(accentColor.copy(alpha = 0.24f), accentColor.copy(alpha = 0.13f))
+                     else        listOf(accentColor.copy(alpha = 0.14f), accentColor.copy(alpha = 0.07f)),
+        ),
+        shape = RoundedCornerShape(size = 999.dp),
+    )
+    .drawWithContent {
+        drawContent()
+        drawRoundRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(Color.White.copy(alpha = if (isDark) 0.16f else 0.40f), Color.Transparent),
+                startY = 0f, endY = size.height * 0.5f,
+            ),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(999f, 999f), size = size,
+        )
+        drawRoundRect(
+            color = accentColor.copy(alpha = if (isDark) 0.36f else 0.22f),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(999f, 999f),
+            style = Stroke(width = 1.dp.toPx()), size = size,
+        )
+    }
 
 private data class Greeting(val main: String, val sub: String)
 private fun getGreeting(): Greeting {
@@ -138,139 +264,41 @@ private fun getGreeting(): Greeting {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Liquid Glass 核心 Modifier
-// 模拟 iOS 26 Liquid Glass：磨砂玻璃 + 顶部高光条 + 边缘光
-// ─────────────────────────────────────────────────────────────────────────────
-private fun Modifier.liquidGlass(
-    isDark: Boolean,
-    cornerRadius: Dp = 24.dp,
-    tintColor: Color = Color.Transparent,
-): Modifier = this
-    // 1. 玻璃主体填充
-    .background(
-        brush = if (isDark) {
-            Brush.verticalGradient(
-                colors = listOf(
-                    GlassDarkHigh,
-                    GlassDark,
-                    Color(0xFF161E2E).copy(alpha = 0.60f),
-                )
-            )
-        } else {
-            Brush.verticalGradient(
-                colors = listOf(
-                    GlassWhiteHigh,
-                    GlassWhiteMid,
-                    GlassWhiteLow,
-                )
-            )
-        },
-        shape = RoundedCornerShape(size = cornerRadius),
-    )
-    // 2. 彩色调色板叠加（品牌色 tint）
-    .then(
-        if (tintColor != Color.Transparent)
-            Modifier.background(
-                color = tintColor.copy(alpha = if (isDark) 0.12f else 0.07f),
-                shape = RoundedCornerShape(size = cornerRadius),
-            )
-        else Modifier
-    )
-    // 3. 顶部高光条 + 边缘光
-    .drawWithContent {
-        drawContent()
-        val cr = cornerRadius.toPx()
-        // 顶部高光条（液态玻璃标志性光泽）
-        drawRoundRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    if (isDark) Color.White.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.55f),
-                    Color.Transparent,
-                ),
-                startY = 0f,
-                endY   = size.height * 0.38f,
-            ),
-            cornerRadius = androidx.compose.ui.geometry.CornerRadius(cr, cr),
-            size = size,
-        )
-        // 外边缘光圈
-        drawRoundRect(
-            brush = Brush.linearGradient(
-                colors = listOf(
-                    if (isDark) GlassEdge else Color.White.copy(alpha = 0.80f),
-                    if (isDark) GlassEdgeDark else Color.White.copy(alpha = 0.20f),
-                    if (isDark) GlassEdge else Color.White.copy(alpha = 0.60f),
-                ),
-                start = Offset(0f, 0f),
-                end   = Offset(size.width, size.height),
-            ),
-            cornerRadius = androidx.compose.ui.geometry.CornerRadius(cr, cr),
-            style = Stroke(width = 1.2.dp.toPx()),
-            size = size,
-        )
-    }
-
-// 悬浮玻璃胶囊 Chip
-private fun Modifier.glassChip(isDark: Boolean, accentColor: Color): Modifier = this
-    .background(
-        brush = Brush.verticalGradient(
-            colors = if (isDark) listOf(accentColor.copy(alpha = 0.22f), accentColor.copy(alpha = 0.12f))
-                     else        listOf(accentColor.copy(alpha = 0.14f), accentColor.copy(alpha = 0.07f)),
-        ),
-        shape = RoundedCornerShape(size = 999.dp),
-    )
-    .drawWithContent {
-        drawContent()
-        // 顶部高光
-        drawRoundRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(Color.White.copy(alpha = if (isDark) 0.18f else 0.40f), Color.Transparent),
-                startY = 0f, endY = size.height * 0.5f,
-            ),
-            cornerRadius = androidx.compose.ui.geometry.CornerRadius(999f, 999f),
-            size = size,
-        )
-        // 边框
-        drawRoundRect(
-            color = accentColor.copy(alpha = if (isDark) 0.35f else 0.22f),
-            cornerRadius = androidx.compose.ui.geometry.CornerRadius(999f, 999f),
-            style = Stroke(width = 1.dp.toPx()),
-            size = size,
-        )
-    }
-
-// ─────────────────────────────────────────────────────────────────────────────
 // 主屏幕
 // ─────────────────────────────────────────────────────────────────────────────
 @Composable
 fun LauncherScreen(vm: LauncherViewModel = viewModel()) {
     val state by vm.uiState.collectAsState()
     val isDark = state.isDark
+    val p      = remember(isDark) { themePalette(isDark) }
     val isBusy = state.loadingBtn != ButtonKey.NONE
     var showNotice by rememberSaveable { mutableStateOf(false) }
     var showGuide  by rememberSaveable { mutableStateOf(false) }
     var autoShown  by rememberSaveable { mutableStateOf(false) }
 
+    // 每分钟检查时间，自动切换主题
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(60_000L)
+            vm.refreshThemeByTime()
+        }
+    }
     LaunchedEffect(state.announcement) {
         if (state.announcement.isNotBlank() && !autoShown) { showNotice = true; autoShown = true }
     }
 
     Box(
         modifier = Modifier.fillMaxSize().background(
-            brush = if (isDark)
-                Brush.radialGradient(
-                    colors = listOf(Color(0xFF0D1526), Color(0xFF060B14), Color(0xFF04070F)),
-                    center = Offset.Unspecified, radius = 1800f,
-                )
-            else
-                Brush.radialGradient(
-                    colors = listOf(Color(0xFFE8F3FF), Color(0xFFD8ECFF), Color(0xFFC8E0F8)),
-                    center = Offset.Unspecified, radius = 1800f,
-                )
+            brush = Brush.radialGradient(
+                colors = if (isDark)
+                    listOf(Color(0xFF130920), Color(0xFF0A0714), Color(0xFF060410))
+                else
+                    listOf(Color(0xFFE8F3FF), Color(0xFFD8ECFF), Color(0xFFC5E0FF)),
+                radius = 2000f,
+            )
         )
     ) {
-        // 背景 Liquid 光晕层
-        LiquidAmbientLight(isDark = isDark)
+        AmbientLight(isDark = isDark, p = p)
 
         Column(
             modifier = Modifier
@@ -280,148 +308,76 @@ fun LauncherScreen(vm: LauncherViewModel = viewModel()) {
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
                 .zIndex(1f),
-            verticalArrangement = Arrangement.spacedBy(space = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Spacer(modifier = Modifier.height(8.dp))
-            LGAnimSec(delayMs = 0)   { HeaderRow(isDark = isDark, onToggleTheme = vm::toggleTheme) }
-            LGAnimSec(delayMs = 80)  { HeroCard(isDark = isDark, state = state, quote = state.gameQuote, onShowNotice = { showNotice = true }, onShowGuide = { showGuide = true }) }
-            LGAnimSec(delayMs = 160) { LaunchButton(loading = state.loadingBtn == ButtonKey.LAUNCH, enabled = !isBusy, isDark = isDark, onClick = vm::onLaunch) }
-            LGAnimSec(delayMs = 220) { ActionList(isDark = isDark, state = state, enabled = !isBusy, vm = vm) }
-            LGAnimSec(delayMs = 280) { FooterRow(isDark = isDark, busy = isBusy) }
+            LGAnim(0)   { HeaderRow(isDark = isDark, p = p, onToggleTheme = vm::toggleTheme) }
+            LGAnim(80)  { HeroCard(isDark = isDark, p = p, state = state, quote = state.gameQuote, onShowNotice = { showNotice = true }, onShowGuide = { showGuide = true }) }
+            LGAnim(160) { LaunchButton(loading = state.loadingBtn == ButtonKey.LAUNCH, enabled = !isBusy, isDark = isDark, p = p, onClick = vm::onLaunch) }
+            LGAnim(220) { ActionList(isDark = isDark, p = p, state = state, enabled = !isBusy, vm = vm) }
+            LGAnim(280) { FooterRow(isDark = isDark, p = p, busy = isBusy) }
             Spacer(modifier = Modifier.height(8.dp))
         }
 
         ToastLayer(toasts = state.toasts, onRemove = vm::removeToast)
 
-        InfoDialog(visible = showNotice, isDark = isDark, title = "系统公告", subtitle = "请阅读后再继续操作。",
+        InfoDialog(visible = showNotice, isDark = isDark, p = p, title = "系统公告", subtitle = "请阅读后再继续操作。",
             bodyText = state.announcement, footerText = "可随时点击首页按钮再次查看。", onDismiss = { showNotice = false })
-        InfoDialog(visible = showGuide, isDark = isDark, title = "使用教程", subtitle = "操作说明，按需查阅。",
+        InfoDialog(visible = showGuide, isDark = isDark, p = p, title = "使用教程", subtitle = "操作说明，按需查阅。",
             bodyText = state.tutorial, footerText = "可随时点击首页按钮再次查看。", onDismiss = { showGuide = false })
 
         if (state.showDialog) {
             AlertDialog(
                 onDismissRequest = vm::dismissDialog,
-                confirmButton = { TextButton(onClick = vm::dismissDialog) { Text(text = "确定", color = AccentBlue) } },
-                title = { Text(text = "提示", fontWeight = FontWeight.SemiBold) },
-                text  = { Text(text = state.dialogMessage, lineHeight = 21.sp) },
-                containerColor = if (isDark) Color(0xFF1C2640).copy(alpha = 0.95f) else Color.White.copy(alpha = 0.92f),
-                shape = RoundedCornerShape(size = 28.dp),
+                confirmButton = { TextButton(onClick = vm::dismissDialog) { Text("确定", color = p.primary, fontWeight = FontWeight.SemiBold) } },
+                title = { Text("提示", fontWeight = FontWeight.SemiBold, color = p.textPrimary) },
+                text  = { Text(state.dialogMessage, lineHeight = 21.sp, color = p.textSecondary) },
+                containerColor = if (isDark) Color(0xFF1A0E2E).copy(alpha = 0.95f) else Color.White.copy(alpha = 0.92f),
+                shape = RoundedCornerShape(28.dp),
             )
         }
     }
 }
 
-// Liquid Glass 弹簧入场动画
 @Composable
-private fun LGAnimSec(delayMs: Int, content: @Composable () -> Unit) {
+private fun LGAnim(delayMs: Int, content: @Composable () -> Unit) {
     AnimatedVisibility(
         visible = true,
-        enter = fadeIn(animationSpec = tween(durationMillis = 600, delayMillis = delayMs, easing = FastOutSlowInEasing)) +
-            scaleIn(
-                animationSpec = tween(durationMillis = 600, delayMillis = delayMs, easing = FastOutSlowInEasing),
-                initialScale = 0.94f,
-            ) +
-            slideInVertically(
-                animationSpec = tween(durationMillis = 600, delayMillis = delayMs, easing = FastOutSlowInEasing),
-                initialOffsetY = { it / 6 },
-            ),
+        enter = fadeIn(tween(600, delayMs, FastOutSlowInEasing)) +
+            scaleIn(tween(600, delayMs, FastOutSlowInEasing), initialScale = 0.94f) +
+            slideInVertically(tween(600, delayMs, FastOutSlowInEasing)) { it / 6 },
     ) { content() }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 背景环境光（Liquid Glass 特征：柔和彩色光球）
-// ─────────────────────────────────────────────────────────────────────────────
+// ── 环境光 ────────────────────────────────────────────────────────────────────
 @Composable
-private fun LiquidAmbientLight(isDark: Boolean) {
-    val inf = rememberInfiniteTransition(label = "ambient")
-    val drift by inf.animateFloat(
-        initialValue = 0f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(12000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "d",
-    )
-    val drift2 by inf.animateFloat(
-        initialValue = 1f, targetValue = 0f,
-        animationSpec = infiniteRepeatable(tween(9000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "d2",
-    )
+private fun AmbientLight(isDark: Boolean, p: ThemePalette) {
+    val inf = rememberInfiniteTransition(label = "amb")
+    val d1 by inf.animateFloat(0f, 1f, infiniteRepeatable(tween(12000, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "d1")
+    val d2 by inf.animateFloat(1f, 0f, infiniteRepeatable(tween(9000,  easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "d2")
 
     Box(modifier = Modifier.fillMaxSize().zIndex(0f)) {
-        // 主光球 - 蓝紫
-        Box(
-            modifier = Modifier
-                .size(size = 420.dp)
-                .offset(x = (-80).dp + 30.dp * drift, y = (-100).dp + 20.dp * drift2)
-                .blur(radiusX = 120.dp, radiusY = 120.dp)
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            if (isDark) AccentBlue.copy(alpha = 0.20f)   else AccentBlue.copy(alpha = 0.12f),
-                            if (isDark) AccentIndigo.copy(alpha = 0.12f) else AccentIndigo.copy(alpha = 0.07f),
-                            Color.Transparent,
-                        )
-                    ),
-                    shape = CircleShape,
-                )
-        )
-        // 右上青色光
-        Box(
-            modifier = Modifier
-                .size(size = 300.dp)
-                .align(Alignment.TopEnd)
-                .offset(x = 60.dp - 20.dp * drift2, y = (-40).dp + 30.dp * drift)
-                .blur(radiusX = 100.dp, radiusY = 100.dp)
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            if (isDark) AccentCyan.copy(alpha = 0.16f)  else AccentCyan.copy(alpha = 0.09f),
-                            Color.Transparent,
-                        )
-                    ),
-                    shape = CircleShape,
-                )
-        )
-        // 右下绿色光
-        Box(
-            modifier = Modifier
-                .size(size = 280.dp)
-                .align(Alignment.BottomEnd)
-                .offset(x = 40.dp - 15.dp * drift, y = 60.dp + 20.dp * drift2)
-                .blur(radiusX = 90.dp, radiusY = 90.dp)
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            if (isDark) AccentGreen.copy(alpha = 0.10f) else AccentGreen.copy(alpha = 0.07f),
-                            Color.Transparent,
-                        )
-                    ),
-                    shape = CircleShape,
-                )
-        )
-        // 左下紫光
-        Box(
-            modifier = Modifier
-                .size(size = 240.dp)
-                .align(Alignment.BottomStart)
-                .offset(x = (-30).dp + 20.dp * drift2, y = 50.dp - 15.dp * drift)
-                .blur(radiusX = 80.dp, radiusY = 80.dp)
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            if (isDark) AccentIndigo.copy(alpha = 0.12f) else AccentIndigo.copy(alpha = 0.07f),
-                            Color.Transparent,
-                        )
-                    ),
-                    shape = CircleShape,
-                )
-        )
+        listOf(
+            Triple(420.dp, Offset(-80f + 30f * d1, -100f + 20f * d2), Brush.radialGradient(listOf(p.primary.copy(alpha = if (isDark) 0.22f else 0.11f), p.secondary.copy(alpha = if (isDark) 0.12f else 0.06f), Color.Transparent))),
+            Triple(300.dp, Offset(60f - 20f * d2, -40f + 30f * d1),   Brush.radialGradient(listOf(p.tertiary.copy(alpha = if (isDark) 0.16f else 0.08f), Color.Transparent))),
+            Triple(260.dp, Offset(40f - 15f * d1, 50f - 15f * d2),    Brush.radialGradient(listOf(p.accent.copy(alpha = if (isDark) 0.10f else 0.06f), Color.Transparent))),
+            Triple(220.dp, Offset(-30f + 20f * d2, 50f + 20f * d1),   Brush.radialGradient(listOf(p.secondary.copy(alpha = if (isDark) 0.12f else 0.06f), Color.Transparent))),
+        ).forEachIndexed { i, (sz, off, brush) ->
+            Box(
+                modifier = Modifier
+                    .size(sz)
+                    .align(when (i) { 1 -> Alignment.TopEnd; 2 -> Alignment.BottomEnd; 3 -> Alignment.BottomStart; else -> Alignment.TopStart })
+                    .offset(x = off.x.dp, y = off.y.dp)
+                    .blur(100.dp)
+                    .background(brush = brush, shape = CircleShape)
+            )
+        }
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Header
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Header ────────────────────────────────────────────────────────────────────
 @Composable
-private fun HeaderRow(isDark: Boolean, onToggleTheme: () -> Unit) {
+private fun HeaderRow(isDark: Boolean, p: ThemePalette, onToggleTheme: () -> Unit) {
     var time by remember { mutableStateOf(Calendar.getInstance()) }
     LaunchedEffect(Unit) { while (true) { delay(1000L); time = Calendar.getInstance() } }
     val timeStr = remember(time) { "%02d:%02d".format(time.get(Calendar.HOUR_OF_DAY), time.get(Calendar.MINUTE)) }
@@ -430,217 +386,110 @@ private fun HeaderRow(isDark: Boolean, onToggleTheme: () -> Unit) {
         "${time.get(Calendar.MONTH)+1}月${time.get(Calendar.DAY_OF_MONTH)}日 ${d[time.get(Calendar.DAY_OF_WEEK)-1]}"
     }
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            LGLogo(size = 44.dp, isDark = isDark)
+            LGLogo(size = 44.dp, isDark = isDark, p = p)
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = "WANFENG STUDIO",
-                    fontSize = 10.sp,
-                    letterSpacing = 2.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = if (isDark) Color.White.copy(alpha = 0.45f) else Color(0xFF3C6496).copy(alpha = 0.70f),
-                )
-                Text(
-                    text = "三角洲服务面板",
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (isDark) Color.White.copy(alpha = 0.92f) else Color(0xFF12203A),
-                )
+                Text("WANFENG STUDIO", fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Medium,
+                    color = p.textSecondary)
+                Text("三角洲服务面板", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = p.textPrimary)
             }
         }
-
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // 时间胶囊 - Liquid Glass
             Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(size = 18.dp))
-                    .liquidGlass(isDark = isDark)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                modifier = Modifier.clip(RoundedCornerShape(18.dp)).liquidGlass(p = p, isDark = isDark, cornerRadius = 18.dp).padding(horizontal = 12.dp, vertical = 8.dp),
                 contentAlignment = Alignment.CenterEnd,
             ) {
                 Column(horizontalAlignment = Alignment.End) {
-                    Text(text = timeStr, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
-                        color = if (isDark) Color.White.copy(alpha = 0.90f) else Color(0xFF12203A))
-                    Text(text = dateStr, fontSize = 10.sp,
-                        color = if (isDark) Color.White.copy(alpha = 0.45f) else Color(0xFF3C6496).copy(alpha = 0.65f))
+                    Text(timeStr, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = p.textPrimary)
+                    Text(dateStr, fontSize = 10.sp, color = p.textSecondary)
                 }
             }
-
-            // 主题切换按钮
-            val scaleBtn by animateFloatAsState(targetValue = 1f, animationSpec = SpringSnappy, label = "themeBtn")
             Box(
-                modifier = Modifier
-                    .size(size = 40.dp)
-                    .scale(scaleBtn)
-                    .clip(RoundedCornerShape(size = 14.dp))
-                    .liquidGlass(isDark = isDark)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onToggleTheme,
-                    ),
+                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(14.dp))
+                    .liquidGlass(p = p, isDark = isDark, cornerRadius = 14.dp, tintColor = p.primary)
+                    .clickable(remember { MutableInteractionSource() }, null, onClick = onToggleTheme),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(text = if (isDark) "☀" else "◐", fontSize = 16.sp)
+                // 深色=紫月 浅色=蓝日
+                Text(if (isDark) "🌙" else "☀", fontSize = 16.sp)
             }
         }
     }
 }
 
-// Liquid Glass Logo
 @Composable
-private fun LGLogo(size: Dp, isDark: Boolean) {
+private fun LGLogo(size: Dp, isDark: Boolean, p: ThemePalette) {
     Box(
-        modifier = Modifier
-            .size(size = size)
-            .clip(RoundedCornerShape(size = size * 0.36f))
-            .liquidGlass(isDark = isDark, tintColor = AccentBlue),
+        modifier = Modifier.size(size).clip(RoundedCornerShape(size * 0.36f))
+            .liquidGlass(p = p, isDark = isDark, cornerRadius = size * 0.36f, tintColor = p.primary),
         contentAlignment = Alignment.Center,
     ) {
-        // 内部三角标
-        Text(
-            text = "▲",
-            fontSize = (size.value * 0.38f).sp,
-            color = if (isDark) AccentCyan.copy(alpha = 0.90f) else AccentBlue.copy(alpha = 0.85f),
-            fontWeight = FontWeight.Medium,
-        )
+        Text("▲", fontSize = (size.value * 0.38f).sp, color = if (isDark) p.tertiary.copy(alpha = 0.90f) else p.primary.copy(alpha = 0.85f), fontWeight = FontWeight.Medium)
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Hero Card
-// ─────────────────────────────────────────────────────────────────────────────
+// ── HeroCard ──────────────────────────────────────────────────────────────────
 @Composable
-private fun HeroCard(
-    isDark: Boolean,
-    state: LauncherUiState,
-    quote: String,
-    onShowNotice: () -> Unit,
-    onShowGuide: () -> Unit,
-) {
+private fun HeroCard(isDark: Boolean, p: ThemePalette, state: LauncherUiState, quote: String, onShowNotice: () -> Unit, onShowGuide: () -> Unit) {
     val greeting = remember { getGreeting() }
-
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(size = 28.dp))
-            .liquidGlass(isDark = isDark, cornerRadius = 28.dp, tintColor = AccentBlue)
-            .padding(all = 18.dp),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp))
+            .liquidGlass(p = p, isDark = isDark, cornerRadius = 28.dp, tintColor = p.primary)
+            .padding(18.dp),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(space = 12.dp)) {
-            // 状态胶囊行
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                LGChip(text = "游戏 ${state.gameStatus.label()}", accent = state.gameStatus.dotColor(), isDark = isDark)
-                LGChip(text = "辅助 ${state.auxStatus.label()}", accent = state.auxStatus.dotColor(), isDark = isDark)
-                if (state.serverStatus != ConnStatus.DISCONNECTED) {
-                    LGChip(text = "服务器 ${state.serverStatus.label()}", accent = state.serverStatus.dotColor(), isDark = isDark)
-                }
+                LGChip("游戏 ${state.gameStatus.label()}", state.gameStatus.dotColor(), isDark)
+                LGChip("辅助 ${state.auxStatus.label()}", state.auxStatus.dotColor(), isDark)
+                if (state.serverStatus != ConnStatus.DISCONNECTED)
+                    LGChip("服务器 ${state.serverStatus.label()}", state.serverStatus.dotColor(), isDark)
             }
-
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
-                    text = greeting.main,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (isDark) Color.White.copy(alpha = 0.92f) else Color(0xFF0D1E35),
-                )
-                Text(
-                    text = greeting.sub,
-                    fontSize = 14.sp,
-                    color = if (isDark) Color.White.copy(alpha = 0.52f) else Color(0xFF3C5A80).copy(alpha = 0.80f),
-                    lineHeight = 20.sp,
-                )
+                Text(greeting.main, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = p.textPrimary)
+                Text(greeting.sub, fontSize = 14.sp, color = p.textSecondary, lineHeight = 20.sp)
             }
-
-            // 寄语 — 嵌套玻璃卡片
             if (quote.isNotBlank()) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(size = 18.dp))
-                        .liquidGlass(isDark = isDark, cornerRadius = 18.dp, tintColor = AccentIndigo)
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
+                        .liquidGlass(p = p, isDark = isDark, cornerRadius = 18.dp, tintColor = p.secondary)
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Top) {
-                        Text(text = "💬", fontSize = 14.sp, modifier = Modifier.padding(top = 1.dp))
-                        Text(
-                            text = quote,
-                            fontSize = 13.sp,
-                            fontStyle = FontStyle.Italic,
-                            color = if (isDark) Color.White.copy(alpha = 0.68f) else Color(0xFF1A3A6A).copy(alpha = 0.80f),
-                            lineHeight = 19.sp,
-                        )
+                        Text("💬", fontSize = 14.sp, modifier = Modifier.padding(top = 1.dp))
+                        Text(quote, fontSize = 13.sp, fontStyle = FontStyle.Italic,
+                            color = if (isDark) Color.White.copy(alpha = 0.68f) else p.secondary.copy(alpha = 0.82f),
+                            lineHeight = 19.sp)
                     }
                 }
             }
-
-            // 按钮行
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                // 查看公告 - 实心玻璃按钮
+                // 实心主按钮
                 Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(size = 16.dp))
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(AccentBlue.copy(alpha = 0.90f), AccentIndigo.copy(alpha = 0.85f)),
-                            ),
-                            shape = RoundedCornerShape(size = 16.dp),
-                        )
+                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp))
+                        .background(Brush.linearGradient(listOf(p.launchStart, p.launchEnd)))
                         .drawWithContent {
                             drawContent()
                             drawRoundRect(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(Color.White.copy(alpha = 0.28f), Color.Transparent),
-                                    startY = 0f, endY = size.height * 0.45f,
-                                ),
-                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx()),
-                                size = size,
+                                brush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.28f), Color.Transparent), 0f, size.height * 0.45f),
+                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx()), size = size,
                             )
-                            drawRoundRect(
-                                color = Color.White.copy(alpha = 0.22f),
+                            drawRoundRect(color = Color.White.copy(alpha = 0.22f),
                                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx()),
-                                style = Stroke(width = 1.dp.toPx()),
-                                size = size,
-                            )
+                                style = Stroke(1.dp.toPx()), size = size)
                         }
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = onShowNotice,
-                        )
+                        .clickable(remember { MutableInteractionSource() }, null, onClick = onShowNotice)
                         .padding(vertical = 10.dp),
                     contentAlignment = Alignment.Center,
-                ) {
-                    Text(text = "查看公告", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color.White)
-                }
-
-                // 使用教程 - 透明玻璃按钮
+                ) { Text("查看公告", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color.White) }
+                // 透明玻璃按钮
                 Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(size = 16.dp))
-                        .liquidGlass(isDark = isDark, cornerRadius = 16.dp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = onShowGuide,
-                        )
+                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp))
+                        .liquidGlass(p = p, isDark = isDark, cornerRadius = 16.dp)
+                        .clickable(remember { MutableInteractionSource() }, null, onClick = onShowGuide)
                         .padding(vertical = 10.dp),
                     contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "使用教程",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (isDark) Color.White.copy(alpha = 0.82f) else AccentBlue.copy(alpha = 0.90f),
-                    )
-                }
+                ) { Text("使用教程", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = if (isDark) Color.White.copy(alpha = 0.82f) else p.primary.copy(alpha = 0.90f)) }
             }
         }
     }
@@ -649,286 +498,139 @@ private fun HeroCard(
 @Composable
 private fun LGChip(text: String, accent: Color, isDark: Boolean) {
     Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(size = 999.dp))
-            .glassChip(isDark = isDark, accentColor = accent)
-            .padding(horizontal = 10.dp, vertical = 5.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.clip(RoundedCornerShape(999.dp)).glassChip(isDark = isDark, accentColor = accent).padding(horizontal = 10.dp, vertical = 5.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically,
     ) {
-        // 呼吸点
         LGPulseDot(color = accent)
-        Text(
-            text = text,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = if (isDark) accent.copy(alpha = 0.95f) else accent.copy(alpha = 0.85f),
-        )
+        Text(text, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = if (isDark) accent.copy(alpha = 0.95f) else accent.copy(alpha = 0.85f))
     }
 }
 
 @Composable
 private fun LGPulseDot(color: Color) {
-    val inf = rememberInfiniteTransition(label = "pd")
-    val alpha by inf.animateFloat(
-        initialValue = 0.4f, targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "pda",
+    val a by rememberInfiniteTransition(label = "pd").animateFloat(
+        0.4f, 1f, infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "pda",
     )
-    Box(modifier = Modifier.size(size = 6.dp).background(color = color.copy(alpha = alpha), shape = CircleShape))
+    Box(modifier = Modifier.size(6.dp).background(color = color.copy(alpha = a), shape = CircleShape))
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Launch Button
-// ─────────────────────────────────────────────────────────────────────────────
+// ── LaunchButton ──────────────────────────────────────────────────────────────
 @Composable
-private fun LaunchButton(loading: Boolean, enabled: Boolean, isDark: Boolean, onClick: () -> Unit) {
-    val scale by animateFloatAsState(
-        targetValue = if (loading) 0.97f else 1f,
-        animationSpec = SpringDefault,
-        label = "launchScale",
+private fun LaunchButton(loading: Boolean, enabled: Boolean, isDark: Boolean, p: ThemePalette, onClick: () -> Unit) {
+    val scale by animateFloatAsState(if (loading) 0.97f else 1f, SpringDefault, label = "ls")
+    val shimmer by rememberInfiniteTransition(label = "sh").animateFloat(
+        -1f, 2f, infiniteRepeatable(tween(2400, easing = FastOutSlowInEasing), RepeatMode.Restart), label = "shv",
     )
-    val inf = rememberInfiniteTransition(label = "lb")
-    val shimmer by inf.animateFloat(
-        initialValue = -1f, targetValue = 2f,
-        animationSpec = infiniteRepeatable(tween(2400, easing = FastOutSlowInEasing), RepeatMode.Restart),
-        label = "shimmer",
-    )
-
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .scale(scale)
-            .clip(RoundedCornerShape(size = 26.dp))
-            .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(LaunchStart, LaunchMid, LaunchEnd),
-                    start = Offset(0f, 0f), end = Offset(1200f, 300f),
-                ),
-                shape = RoundedCornerShape(size = 26.dp),
-            )
-            // 流光扫过效果（Liquid Glass 特征）
+        modifier = Modifier.fillMaxWidth().scale(scale).clip(RoundedCornerShape(26.dp))
+            .background(Brush.linearGradient(listOf(p.launchStart, p.launchMid, p.launchEnd), Offset(0f,0f), Offset(1200f,300f)))
             .drawWithContent {
                 drawContent()
                 val sw = size.width * 0.5f
                 drawRect(
                     brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.White.copy(alpha = 0.18f),
-                            Color.White.copy(alpha = 0.08f),
-                            Color.Transparent,
-                        ),
+                        listOf(Color.Transparent, Color.White.copy(alpha = 0.18f), Color.White.copy(alpha = 0.08f), Color.Transparent),
                         startX = shimmer * size.width - sw * 0.5f,
                         endX   = shimmer * size.width + sw,
-                    ),
+                    )
                 )
-                // 顶部高光
                 drawRoundRect(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(Color.White.copy(alpha = 0.30f), Color.Transparent),
-                        startY = 0f, endY = size.height * 0.40f,
-                    ),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(26.dp.toPx()),
-                    size = size,
+                    brush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.30f), Color.Transparent), 0f, size.height * 0.40f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(26.dp.toPx()), size = size,
                 )
-                // 边框
-                drawRoundRect(
-                    color = Color.White.copy(alpha = 0.28f),
+                drawRoundRect(color = Color.White.copy(alpha = 0.26f),
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(26.dp.toPx()),
-                    style = Stroke(width = 1.2.dp.toPx()),
-                    size = size,
-                )
+                    style = Stroke(1.2.dp.toPx()), size = size)
             }
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = { if (enabled && !loading) onClick() },
-            )
+            .clickable(remember { MutableInteractionSource() }, null) { if (enabled && !loading) onClick() }
             .padding(horizontal = 18.dp, vertical = 16.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                // 图标球
                 Box(
-                    modifier = Modifier
-                        .size(size = 46.dp)
-                        .clip(CircleShape)
-                        .background(color = Color.White.copy(alpha = 0.20f))
+                    modifier = Modifier.size(46.dp).clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.20f))
                         .drawWithContent {
                             drawContent()
-                            drawCircle(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(Color.White.copy(alpha = 0.35f), Color.Transparent),
-                                    startY = 0f, endY = size.height * 0.5f,
-                                )
-                            )
-                            drawCircle(color = Color.White.copy(alpha = 0.20f), style = Stroke(width = 1.dp.toPx()))
+                            drawCircle(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.35f), Color.Transparent), 0f, size.height * 0.5f))
+                            drawCircle(Color.White.copy(alpha = 0.20f), style = Stroke(1.dp.toPx()))
                         },
                     contentAlignment = Alignment.Center,
                 ) {
                     if (loading) {
-                        val rot by rememberInfiniteTransition(label = "spin").animateFloat(
-                            initialValue = 0f, targetValue = 360f,
-                            animationSpec = infiniteRepeatable(tween(900, easing = LinearEasing)),
-                            label = "r",
-                        )
-                        Text(text = "↻", color = Color.White, fontSize = 22.sp,
-                            modifier = Modifier.graphicsLayer { rotationZ = rot })
-                    } else {
-                        Text(text = "▶", color = Color.White, fontSize = 18.sp)
-                    }
+                        val rot by rememberInfiniteTransition(label = "spin").animateFloat(0f, 360f, infiniteRepeatable(tween(900, easing = LinearEasing)), label = "r")
+                        Text("↻", Color.White, 22.sp, modifier = Modifier.graphicsLayer { rotationZ = rot })
+                    } else Text("▶", Color.White, 18.sp)
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = when { loading -> "正在启动中…"; !enabled -> "请等待当前任务完成"; else -> "开始启动" },
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White,
+                        when { loading -> "正在启动中…"; !enabled -> "请等待当前任务完成"; else -> "开始启动" },
+                        fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White,
                     )
                     Text(
-                        text = if (loading) "正在执行启动流程，请勿重复点击" else "一键启动辅助程序与游戏",
-                        fontSize = 12.sp,
-                        color = Color.White.copy(alpha = 0.72f),
+                        if (loading) "正在执行启动流程，请勿重复点击" else "一键启动辅助程序与游戏",
+                        fontSize = 12.sp, color = Color.White.copy(alpha = 0.72f),
                     )
                 }
             }
-            Text(text = "›", fontSize = 26.sp, color = Color.White.copy(alpha = 0.70f), fontWeight = FontWeight.Light)
+            Text("›", fontSize = 26.sp, color = Color.White.copy(alpha = 0.70f), fontWeight = FontWeight.Light)
         }
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Action List
-// ─────────────────────────────────────────────────────────────────────────────
+// ── ActionList ────────────────────────────────────────────────────────────────
 @Composable
-private fun ActionList(isDark: Boolean, state: LauncherUiState, enabled: Boolean, vm: LauncherViewModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(space = 10.dp)) {
-        Text(
-            text = "快捷操作",
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 0.8.sp,
-            color = if (isDark) Color.White.copy(alpha = 0.45f) else Color(0xFF3C5A80).copy(alpha = 0.65f),
-            modifier = Modifier.padding(horizontal = 4.dp),
-        )
-        LGActionCard(icon = "🔄", title = "重启辅助程序", subtitle = "重新载入辅助模块",   accent = CardPurple, loading = state.loadingBtn == ButtonKey.RESTART_AUX, enabled = enabled, isDark = isDark, onClick = vm::onRestartAux)
-        LGActionCard(icon = "🚫", title = "完全关闭辅助", subtitle = "停止所有相关进程",   accent = CardRed,    loading = state.loadingBtn == ButtonKey.CLOSE_ALL,   enabled = enabled, isDark = isDark, onClick = vm::onCloseAll)
-        LGActionCard(icon = "🛡", title = "清理防盗号",   subtitle = "清理设备并加固账号", accent = CardGreen,  loading = state.loadingBtn == ButtonKey.CLEAN,       enabled = enabled, isDark = isDark, onClick = vm::onClean)
+private fun ActionList(isDark: Boolean, p: ThemePalette, state: LauncherUiState, enabled: Boolean, vm: LauncherViewModel) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("快捷操作", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.8.sp,
+            color = p.textSecondary, modifier = Modifier.padding(horizontal = 4.dp))
+        LGActionCard("🔄","重启辅助程序","重新载入辅助模块",  CardPurple, state.loadingBtn==ButtonKey.RESTART_AUX, enabled, isDark, p, vm::onRestartAux)
+        LGActionCard("🚫","完全关闭辅助","停止所有相关进程",  CardRed,    state.loadingBtn==ButtonKey.CLOSE_ALL,   enabled, isDark, p, vm::onCloseAll)
+        LGActionCard("🛡","清理防盗号",  "清理设备并加固账号", CardGreen,  state.loadingBtn==ButtonKey.CLEAN,       enabled, isDark, p, vm::onClean)
     }
 }
 
 @Composable
-private fun LGActionCard(
-    icon: String,
-    title: String,
-    subtitle: String,
-    accent: Color,
-    loading: Boolean,
-    enabled: Boolean,
-    isDark: Boolean,
-    onClick: () -> Unit,
-) {
-    val scale by animateFloatAsState(
-        targetValue = if (loading) 0.97f else 1f,
-        animationSpec = SpringDefault,
-        label = "ac$title",
-    )
-    val rot by if (loading) {
-        rememberInfiniteTransition(label = "ar$title").animateFloat(
-            initialValue = 0f, targetValue = 360f,
-            animationSpec = infiniteRepeatable(tween(900, easing = LinearEasing)),
-            label = "rot$title",
-        )
-    } else { remember { mutableStateOf(0f) } }
-
+private fun LGActionCard(icon: String, title: String, subtitle: String, accent: Color, loading: Boolean, enabled: Boolean, isDark: Boolean, p: ThemePalette, onClick: () -> Unit) {
+    val scale by animateFloatAsState(if (loading) 0.97f else 1f, SpringDefault, label = "ac$title")
+    val rot by if (loading) rememberInfiniteTransition(label = "ar$title").animateFloat(0f,360f,infiniteRepeatable(tween(900,easing=LinearEasing)),label="rot")
+               else remember { mutableStateOf(0f) }
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .scale(scale)
-            .clip(RoundedCornerShape(size = 22.dp))
-            .liquidGlass(isDark = isDark, cornerRadius = 22.dp, tintColor = accent)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = { if (enabled && !loading) onClick() },
-            )
+        modifier = Modifier.fillMaxWidth().scale(scale).clip(RoundedCornerShape(22.dp))
+            .liquidGlass(p = p, isDark = isDark, cornerRadius = 22.dp, tintColor = accent)
+            .clickable(remember { MutableInteractionSource() }, null) { if (enabled && !loading) onClick() }
             .padding(horizontal = 16.dp, vertical = 14.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                // 图标球
                 Box(
-                    modifier = Modifier
-                        .size(size = 44.dp)
-                        .clip(CircleShape)
-                        .background(color = accent.copy(alpha = if (isDark) 0.22f else 0.14f))
+                    modifier = Modifier.size(44.dp).clip(CircleShape)
+                        .background(accent.copy(alpha = if (isDark) 0.22f else 0.14f))
                         .drawWithContent {
                             drawContent()
-                            drawCircle(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(Color.White.copy(alpha = if (isDark) 0.20f else 0.40f), Color.Transparent),
-                                    startY = 0f, endY = size.height * 0.55f,
-                                )
-                            )
-                            drawCircle(
-                                color = accent.copy(alpha = if (isDark) 0.30f else 0.18f),
-                                style = Stroke(width = 1.dp.toPx()),
-                            )
+                            drawCircle(Brush.verticalGradient(listOf(Color.White.copy(alpha = if (isDark) 0.20f else 0.40f), Color.Transparent), 0f, size.height * 0.55f))
+                            drawCircle(accent.copy(alpha = if (isDark) 0.30f else 0.18f), style = Stroke(1.dp.toPx()))
                         },
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(
-                        text = icon,
-                        fontSize = 20.sp,
-                        modifier = if (loading) Modifier.graphicsLayer { rotationZ = rot } else Modifier,
-                    )
+                    Text(icon, fontSize = 20.sp, modifier = if (loading) Modifier.graphicsLayer { rotationZ = rot } else Modifier)
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(
-                        text = title,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (isDark) Color.White.copy(alpha = 0.90f) else Color(0xFF0D1E35),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = if (!enabled && !loading) "当前有任务执行中" else subtitle,
-                        fontSize = 12.sp,
-                        color = if (isDark) Color.White.copy(alpha = 0.48f) else Color(0xFF3C5A80).copy(alpha = 0.70f),
-                    )
+                    Text(title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = p.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(if (!enabled && !loading) "当前有任务执行中" else subtitle, fontSize = 12.sp, color = p.textSecondary)
                 }
             }
-            // 状态标签
             Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(size = 999.dp))
-                    .glassChip(isDark = isDark, accentColor = accent)
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                modifier = Modifier.clip(RoundedCornerShape(999.dp)).glassChip(isDark = isDark, accentColor = accent).padding(horizontal = 10.dp, vertical = 5.dp),
             ) {
-                Text(
-                    text = if (loading) "执行中" else "进入",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (isDark) accent.copy(alpha = 0.95f) else accent.copy(alpha = 0.85f),
-                )
+                Text(if (loading) "执行中" else "进入", fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                    color = if (isDark) accent.copy(alpha = 0.95f) else accent.copy(alpha = 0.85f))
             }
         }
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Footer
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Footer ────────────────────────────────────────────────────────────────────
 @Composable
 private fun rememberAppVersionName(): String {
     val ctx = LocalContext.current
@@ -943,111 +645,60 @@ private fun rememberAppVersionName(): String {
 }
 
 @Composable
-private fun FooterRow(isDark: Boolean, busy: Boolean) {
+private fun FooterRow(isDark: Boolean, p: ThemePalette, busy: Boolean) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(size = 20.dp))
-            .liquidGlass(isDark = isDark, cornerRadius = 20.dp)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
+            .liquidGlass(p = p, isDark = isDark, cornerRadius = 20.dp).padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = "晚风工作室",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (isDark) Color.White.copy(alpha = 0.80f) else Color(0xFF0D1E35),
-                )
-                Text(
-                    text = "版本 v${rememberAppVersionName()} · 客户服务版",
-                    fontSize = 11.sp,
-                    color = if (isDark) Color.White.copy(alpha = 0.40f) else Color(0xFF3C5A80).copy(alpha = 0.60f),
-                )
+                Text("晚风工作室", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = p.textPrimary)
+                Text("版本 v${rememberAppVersionName()} · 客户服务版", fontSize = 11.sp, color = p.textSecondary)
             }
-            LGChip(
-                text = if (busy) "处理中" else "服务正常",
-                accent = if (busy) AccentBlue else AccentGreen,
-                isDark = isDark,
-            )
+            LGChip(if (busy) "处理中" else "服务正常", if (busy) p.primary else p.accent, isDark)
         }
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// InfoDialog — 玻璃弹窗
-// ─────────────────────────────────────────────────────────────────────────────
+// ── InfoDialog ────────────────────────────────────────────────────────────────
 @Composable
-private fun InfoDialog(
-    visible: Boolean,
-    isDark: Boolean,
-    title: String,
-    subtitle: String,
-    bodyText: String,
-    footerText: String,
-    onDismiss: () -> Unit,
-) {
+private fun InfoDialog(visible: Boolean, isDark: Boolean, p: ThemePalette, title: String, subtitle: String, bodyText: String, footerText: String, onDismiss: () -> Unit) {
     if (!visible) return
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = onDismiss) { Text(text = "知道了", color = AccentBlue, fontWeight = FontWeight.SemiBold) } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("知道了", color = p.primary, fontWeight = FontWeight.SemiBold) } },
         title = {
             Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(text = title, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                Text(text = subtitle, fontSize = 12.sp,
-                    color = if (isDark) Color.White.copy(alpha = 0.50f) else Color(0xFF3C5A80).copy(alpha = 0.70f))
+                Text(title, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = p.textPrimary)
+                Text(subtitle, fontSize = 12.sp, color = p.textSecondary)
             }
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(size = 16.dp))
-                        .liquidGlass(isDark = isDark, cornerRadius = 16.dp, tintColor = StatusAmber)
-                        .padding(all = 14.dp),
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+                        .liquidGlass(p = p, isDark = isDark, cornerRadius = 16.dp, tintColor = StatusAmber)
+                        .padding(14.dp),
                 ) {
-                    Text(
-                        text = bodyText.ifBlank { "暂无内容" }.trim(),
-                        fontSize = 14.sp,
-                        lineHeight = 22.sp,
-                        color = if (isDark) Color.White.copy(alpha = 0.82f) else Color(0xFF0D1E35),
-                    )
+                    Text(bodyText.ifBlank { "暂无内容" }.trim(), fontSize = 14.sp, lineHeight = 22.sp, color = p.textPrimary)
                 }
-                Text(
-                    text = footerText,
-                    fontSize = 11.sp,
-                    color = if (isDark) Color.White.copy(alpha = 0.38f) else Color(0xFF3C5A80).copy(alpha = 0.55f),
-                )
+                Text(footerText, fontSize = 11.sp, color = p.textSecondary)
             }
         },
-        containerColor = if (isDark) Color(0xFF111827).copy(alpha = 0.88f) else Color(0xFFF0F7FF).copy(alpha = 0.92f),
-        shape = RoundedCornerShape(size = 30.dp),
+        containerColor = if (isDark) Color(0xFF1A0D2E).copy(alpha = 0.92f) else Color(0xFFF0F7FF).copy(alpha = 0.92f),
+        shape = RoundedCornerShape(30.dp),
     )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Toast — 悬浮玻璃胶囊
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Toast ─────────────────────────────────────────────────────────────────────
 @Composable
 private fun ToastLayer(toasts: List<ToastData>, onRemove: (Long) -> Unit) {
     Box(modifier = Modifier.fillMaxSize().zIndex(10f), contentAlignment = Alignment.TopCenter) {
-        Column(
-            modifier = Modifier.statusBarsPadding().padding(top = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            AnimatedContent(
-                targetState = toasts,
-                transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(200)) },
-                label = "tl",
-            ) { list ->
+        Column(modifier = Modifier.statusBarsPadding().padding(top = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            AnimatedContent(toasts, transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(200)) }, label = "tl") { list ->
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    list.forEach { t -> LGToastItem(toast = t, onDone = { onRemove(t.id) }) }
+                    list.forEach { t -> LGToast(t) { onRemove(t.id) } }
                 }
             }
         }
@@ -1055,49 +706,33 @@ private fun ToastLayer(toasts: List<ToastData>, onRemove: (Long) -> Unit) {
 }
 
 @Composable
-private fun LGToastItem(toast: ToastData, onDone: () -> Unit) {
+private fun LGToast(toast: ToastData, onDone: () -> Unit) {
     LaunchedEffect(toast.id) { delay(3200L); onDone() }
     val dot = toast.color.toComposeColor()
     Row(
-        modifier = Modifier
-            .widthIn(max = 340.dp)
-            .clip(RoundedCornerShape(size = 999.dp))
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(Color(0xFF1C2B45).copy(alpha = 0.92f), Color(0xFF111827).copy(alpha = 0.88f))
-                ),
-                shape = RoundedCornerShape(size = 999.dp),
-            )
+        modifier = Modifier.widthIn(max = 340.dp).clip(RoundedCornerShape(999.dp))
+            .background(Brush.verticalGradient(listOf(Color(0xFF1C1030).copy(alpha = 0.92f), Color(0xFF100820).copy(alpha = 0.88f))))
             .drawWithContent {
                 drawContent()
                 drawRoundRect(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(Color.White.copy(alpha = 0.18f), Color.Transparent),
-                        startY = 0f, endY = size.height * 0.5f,
-                    ),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(999f),
-                    size = size,
+                    brush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent), 0f, size.height * 0.5f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(999f), size = size,
                 )
-                drawRoundRect(
-                    color = dot.copy(alpha = 0.30f),
+                drawRoundRect(color = dot.copy(alpha = 0.30f),
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(999f),
-                    style = Stroke(width = 1.dp.toPx()),
-                    size = size,
-                )
+                    style = Stroke(1.dp.toPx()), size = size)
             }
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Box(modifier = Modifier.size(7.dp).background(color = dot, shape = CircleShape))
-        Text(text = toast.msg, fontSize = 13.sp, color = Color.White.copy(alpha = 0.88f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Box(modifier = Modifier.size(7.dp).background(dot, CircleShape))
+        Text(toast.msg, fontSize = 13.sp, color = ToastText, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 扩展函数
-// ─────────────────────────────────────────────────────────────────────────────
-private fun RunStatus.label() = when (this) { RunStatus.RUNNING -> "运行中"; RunStatus.LOADING -> "启动中"; RunStatus.STOPPED -> "已停止" }
-private fun RunStatus.dotColor() = when (this) { RunStatus.RUNNING -> StatusGreen; RunStatus.LOADING -> StatusAmber; RunStatus.STOPPED -> StatusRed }
-private fun ConnStatus.label() = when (this) { ConnStatus.CONNECTED -> "已连接"; ConnStatus.CONNECTING -> "连接中"; ConnStatus.DISCONNECTED -> "离线" }
-private fun ConnStatus.dotColor() = when (this) { ConnStatus.CONNECTED -> StatusGreen; ConnStatus.CONNECTING -> StatusAmber; ConnStatus.DISCONNECTED -> StatusRed }
+// ── 扩展函数 ──────────────────────────────────────────────────────────────────
+private fun RunStatus.label() = when (this) { RunStatus.RUNNING->"运行中"; RunStatus.LOADING->"启动中"; RunStatus.STOPPED->"已停止" }
+private fun RunStatus.dotColor() = when (this) { RunStatus.RUNNING->StatusGreen; RunStatus.LOADING->StatusAmber; RunStatus.STOPPED->StatusRed }
+private fun ConnStatus.label() = when (this) { ConnStatus.CONNECTED->"已连接"; ConnStatus.CONNECTING->"连接中"; ConnStatus.DISCONNECTED->"离线" }
+private fun ConnStatus.dotColor() = when (this) { ConnStatus.CONNECTED->StatusGreen; ConnStatus.CONNECTING->StatusAmber; ConnStatus.DISCONNECTED->StatusRed }
