@@ -462,16 +462,16 @@ private fun HeaderRow(isDark: Boolean, p: ThemePalette, onToggleTheme: () -> Uni
 }
 
 @Composable
-private fun LGLogo(size: Dp, isDark: Boolean, p: ThemePalette) {
+private fun LGLogo(logoSize: Dp, isDark: Boolean, p: ThemePalette) {
     Box(
         modifier = Modifier
-            .size(size = size)
+            .size(size = logoSize)
             // iOS 风格圆角：约 22% 边长
-            .clip(RoundedCornerShape(size = size * 0.28f))
+            .clip(RoundedCornerShape(size = logoSize * 0.28f))
             // 边框发光
             .drawWithContent {
                 drawContent()
-                val cr = (size.value * 0.28f).dp.toPx()
+                val cr = (logoSize.value * 0.28f).dp.toPx()
                 // 顶部主色渐变（仅上半截）
                 drawRoundRect(
                     brush = Brush.verticalGradient(
