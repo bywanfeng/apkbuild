@@ -1,11 +1,5 @@
 package com.wanfeng.launcher.ui.screen
 
-// 根据时间判断是否深色：19:00-次日07:00 为深色
-private fun isNightTime(): Boolean {
-    val h = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-    return h >= 19 || h < 7
-}
-
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
@@ -21,6 +15,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+// 根据时间判断是否深色：19:00-次日07:00 为深色
+private fun isNightTime(): Boolean {
+    val h = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+    return h >= 19 || h < 7
+}
 
 // ── 枚举 ──────────────────────────────────────────────────────────────────────
 enum class RunStatus  { RUNNING, STOPPED, LOADING }
