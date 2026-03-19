@@ -395,7 +395,7 @@ private fun HeaderRow(isDark: Boolean, p: ThemePalette, onToggleTheme: () -> Uni
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text("WANFENG STUDIO", fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Medium,
                     color = p.textSecondary)
-                Text("三角洲服务面板", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = p.textPrimary)
+                Text("三角篓子启动器", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = p.textPrimary)
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
