@@ -6,17 +6,5 @@
 # pkill -f axel_main 2>/dev/null
 # sleep 1
 # /data/local/tmp/axel_main &
-if [ -f "/dev/input/event5" ]; then
-    echo "fal"
-else
-    touch /dev/input/event0
-    touch /dev/input/event1
-    touch /dev/input/event2
-    touch /dev/input/event3
-    touch /dev/input/event4
-    touch /dev/input/event5
-    echo "ok"
-fi
-pkill -f xkernel.sh
 
 exit 0

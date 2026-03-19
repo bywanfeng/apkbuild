@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -54,13 +55,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.graphicsLayer
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -72,6 +74,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.wanfeng.launcher.BuildConfig
 import com.wanfeng.launcher.ui.theme.AccentBlue
 import com.wanfeng.launcher.ui.theme.AccentGreen
 import com.wanfeng.launcher.ui.theme.AccentCyan
@@ -126,6 +129,7 @@ private fun getGreeting(streak: Int): Greeting {
 fun LauncherScreen(vm: LauncherViewModel = viewModel()) {
     val state by vm.uiState.collectAsState()
     val isDark = state.isDark
+    val isBusy = state.loadingBtn != ButtonKey.NONE
     var showNotice by rememberSaveable { mutableStateOf(false) }
     var autoNoticeShown by rememberSaveable { mutableStateOf(false) }
 
@@ -203,6 +207,7 @@ fun LauncherScreen(vm: LauncherViewModel = viewModel()) {
             AnimatedSection(delayMillis = 180) {
                 LaunchButton(
                     loading = state.loadingBtn == ButtonKey.LAUNCH,
+                    enabled = !isBusy,
                     isDark = isDark,
                     onClick = vm::onLaunch,
                 )
@@ -212,12 +217,13 @@ fun LauncherScreen(vm: LauncherViewModel = viewModel()) {
                 ActionList(
                     isDark = isDark,
                     state = state,
+                    enabled = !isBusy,
                     vm = vm,
                 )
             }
 
             AnimatedSection(delayMillis = 300) {
-                FooterRow(isDark = isDark)
+                FooterRow(isDark = isDark, busy = isBusy)
             }
 
             Spacer(Modifier.height(12.dp))
@@ -720,7 +726,7 @@ private fun PulseDot(color: Color, pulse: Boolean) {
 }
 
 @Composable
-private fun LaunchButton(loading: Boolean, isDark: Boolean, onClick: () -> Unit) {
+private fun LaunchButton(loading: Boolean, enabled: Boolean, isDark: Boolean, onClick: () -> Unit) {
     val borderPulse by rememberInfiniteTransition(label = "launchBtn").animateFloat(
         initialValue = 0.35f,
         targetValue = 0.82f,
@@ -747,10 +753,11 @@ private fun LaunchButton(loading: Boolean, isDark: Boolean, onClick: () -> Unit)
                     )
                 )
                 .border(1.dp, Color.White.copy(alpha = borderPulse * 0.24f), RoundedCornerShape(28.dp))
+                .alpha(if (enabled || loading) 1f else 0.72f)
                 .clickable(
                     interactionSource = interactionSource,
                     indication = null,
-                    onClick = { if (!loading) onClick() },
+                    onClick = { if (enabled && !loading) onClick() },
                 )
                 .padding(horizontal = 18.dp, vertical = 18.dp),
         ) {
@@ -803,12 +810,16 @@ private fun LaunchButton(loading: Boolean, isDark: Boolean, onClick: () -> Unit)
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
-                            text = if (loading) "正在启动中…" else "启动辅助与游戏",
+                            text = when {
+                                loading -> "正在启动中…"
+                                !enabled -> "请等待当前任务完成"
+                                else -> "启动辅助与游戏"
+                            },
                             style = MaterialTheme.typography.titleLarge,
                             color = Color.White,
                         )
                         Text(
-                            text = "冷色科技风控制台 · 一键完成启动流程",
+                            text = if (loading) "正在执行启动流程，请勿重复点击" else "冷色科技风控制台 · 一键完成启动流程",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.White.copy(alpha = 0.8f),
                         )
@@ -826,7 +837,7 @@ private fun LaunchButton(loading: Boolean, isDark: Boolean, onClick: () -> Unit)
 }
 
 @Composable
-private fun ActionList(isDark: Boolean, state: LauncherUiState, vm: LauncherViewModel) {
+private fun ActionList(isDark: Boolean, state: LauncherUiState, enabled: Boolean, vm: LauncherViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
@@ -842,20 +853,22 @@ private fun ActionList(isDark: Boolean, state: LauncherUiState, vm: LauncherView
         }
 
         WideActionCard(
-            icon = "↺",
+            icon = "🔄",
             title = "重启辅助程序",
             subtitle = "重新载入辅助模块",
             accent = CardPurple,
             loading = state.loadingBtn == ButtonKey.RESTART_AUX,
+            enabled = enabled,
             isDark = isDark,
             onClick = vm::onRestartAux,
         )
         WideActionCard(
-            icon = "⏻",
+            icon = "🚫",
             title = "完全关闭辅助",
             subtitle = "停止所有相关进程",
             accent = CardRed,
             loading = state.loadingBtn == ButtonKey.CLOSE_ALL,
+            enabled = enabled,
             isDark = isDark,
             onClick = vm::onCloseAll,
         )
@@ -865,6 +878,7 @@ private fun ActionList(isDark: Boolean, state: LauncherUiState, vm: LauncherView
             subtitle = "清理设备并加固账号",
             accent = CardGreen,
             loading = state.loadingBtn == ButtonKey.CLEAN,
+            enabled = enabled,
             isDark = isDark,
             onClick = vm::onClean,
         )
@@ -878,6 +892,7 @@ private fun WideActionCard(
     subtitle: String,
     accent: Color,
     loading: Boolean,
+    enabled: Boolean,
     isDark: Boolean,
     onClick: () -> Unit,
 ) {
@@ -900,10 +915,11 @@ private fun WideActionCard(
                 scaleX = scale
                 scaleY = scale
             }
+            .alpha(if (enabled || loading) 1f else 0.68f)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-                onClick = onClick,
+                onClick = { if (enabled && !loading) onClick() },
             ),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
@@ -955,7 +971,7 @@ private fun WideActionCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = subtitle,
+                        text = if (!enabled && !loading) "当前有任务执行中" else subtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -977,7 +993,7 @@ private fun WideActionCard(
 }
 
 @Composable
-private fun FooterRow(isDark: Boolean) {
+private fun FooterRow(isDark: Boolean, busy: Boolean) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -995,7 +1011,7 @@ private fun FooterRow(isDark: Boolean) {
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(
-                    text = "晚风工作室 · v2.4.1",
+                    text = "晚风工作室 · v${BuildConfig.VERSION_NAME}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
@@ -1006,8 +1022,8 @@ private fun FooterRow(isDark: Boolean) {
                 )
             }
             MiniChip(
-                text = "云手机服务正常",
-                accent = AccentGreen,
+                text = if (busy) "任务执行中" else "云手机服务正常",
+                accent = if (busy) AccentBlue else AccentGreen,
                 isDark = isDark,
             )
         }
@@ -1118,6 +1134,7 @@ private fun ToastItem(toast: ToastData, onDone: () -> Unit) {
     val dotColor = toast.color.toComposeColor()
     Row(
         modifier = Modifier
+            .widthIn(max = 360.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(ToastBg)
             .border(1.dp, dotColor.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
@@ -1126,7 +1143,13 @@ private fun ToastItem(toast: ToastData, onDone: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Box(modifier = Modifier.size(6.dp).background(dotColor, CircleShape))
-        Text(toast.msg, fontSize = 13.sp, color = ToastText)
+        Text(
+            text = toast.msg,
+            fontSize = 13.sp,
+            color = ToastText,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
