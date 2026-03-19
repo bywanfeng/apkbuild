@@ -84,5 +84,3 @@ app/src/main/
 - targetSdk: Android 12 (API 31)
 - 编译 JDK: 17
 - Kotlin: 2.0.0 / Compose BOM: 2024.08.00
-# apkbuild
-# apkbuild
