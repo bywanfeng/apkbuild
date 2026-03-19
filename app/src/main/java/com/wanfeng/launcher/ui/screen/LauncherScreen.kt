@@ -107,23 +107,16 @@ private val EaseInOut = CubicBezierEasing(0.4f, 0f, 0.6f, 1f)
 
 private data class Greeting(val main: String, val sub: String, val tip: String)
 
-private fun getStreak(): Int = 1
-
-private fun getGreeting(streak: Int): Greeting {
+private fun getGreeting(): Greeting {
     val h = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-    val badge = when {
-        streak >= 30 -> "精英干员"
-        streak >= 7 -> "老干员"
-        else -> "干员"
-    }
     return when (h) {
-        in 0..4 -> Greeting("$badge，夜已深了。", "战场可以等到天明，但你的状态不能。注意休息。", "已连续出勤 $streak 天 · 感谢你的坚守")
-        in 5..7 -> Greeting("$badge，黎明将至。", "黎明前的部署最为关键，愿今日首战告捷。", "已连续出勤 $streak 天 · 早起的干员运气不差")
-        in 8..11 -> Greeting("$badge，上午好。", "清晨的判断力最为清醒，今日的战绩就靠你了。", "已连续出勤 $streak 天 · 感谢一直以来的信任")
-        in 12..13 -> Greeting("$badge，该补给了。", "精锐也需要足够的后勤保障。先去吃点东西吧。", "已连续出勤 $streak 天 · 满血状态才能满血发挥")
-        in 14..17 -> Greeting("$badge，下午好。", "午后最易松懈，但最强的干员往往这时反而更专注。", "已连续出勤 $streak 天 · 今天的你无往不胜")
-        in 18..20 -> Greeting("$badge，黄金作战时段。", "今晚的战场等待着你，出发吧，祝旗开得胜。", "已连续出勤 $streak 天 · 晚风永远在你身后")
-        else -> Greeting("$badge，今天辛苦了。", "每一次出击都是淬炼，你比昨天更强了。注意休息。", "已连续出勤 $streak 天 · 晚安，好好休息")
+        in 0..4 -> Greeting("夜深了，辛苦了。", "如需继续操作，建议先确认设备与网络状态。", "公告与教程可在下方随时查看")
+        in 5..7 -> Greeting("早上好，欢迎使用。", "建议先查看今日公告，再开始本次操作。", "常用说明已整理到教程页面")
+        in 8..11 -> Greeting("上午好，准备就绪。", "当前页面可直接查看状态、启动服务和处理常用操作。", "如遇异常，可优先查看公告说明")
+        in 12..13 -> Greeting("中午好，先休息一下。", "操作前确认环境正常，能减少重复处理。", "需要帮助时可查看教程页面")
+        in 14..17 -> Greeting("下午好，继续处理吧。", "当前状态会实时同步，便于你快速判断下一步。", "公告和教程已分开显示，查找更方便")
+        in 18..20 -> Greeting("晚上好，欢迎回来。", "开始前先看一眼状态信息，会更省时间。", "如需重新处理，可使用下方快捷操作")
+        else -> Greeting("今天辛苦了。", "若还需要继续操作，建议完成后及时检查结果。", "常见说明已整理完毕，按需查看即可")
     }
 }
 
@@ -133,6 +126,7 @@ fun LauncherScreen(vm: LauncherViewModel = viewModel()) {
     val isDark = state.isDark
     val isBusy = state.loadingBtn != ButtonKey.NONE
     var showNotice by rememberSaveable { mutableStateOf(false) }
+    var showGuide by rememberSaveable { mutableStateOf(false) }
     var autoNoticeShown by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(state.announcement) {
@@ -193,9 +187,10 @@ fun LauncherScreen(vm: LauncherViewModel = viewModel()) {
             AnimatedSection(delayMillis = 60) {
                 HeroCard(
                     isDark = isDark,
+                    state = state,
                     quote = state.gameQuote,
-                    streak = getStreak(),
                     onShowNotice = { showNotice = true },
+                    onShowGuide = { showGuide = true },
                 )
             }
 
@@ -233,11 +228,24 @@ fun LauncherScreen(vm: LauncherViewModel = viewModel()) {
 
         ToastLayer(toasts = state.toasts, onRemove = vm::removeToast)
 
-        NoticeDialog(
+        InfoDialog(
             visible = showNotice,
             isDark = isDark,
-            noticeText = state.announcement,
+            title = "系统公告",
+            subtitle = "请先阅读公告内容后再继续操作。",
+            bodyText = state.announcement,
+            footerText = "如需再次查看，可在首页点击“查看公告”。",
             onDismiss = { showNotice = false },
+        )
+
+        InfoDialog(
+            visible = showGuide,
+            isDark = isDark,
+            title = "使用教程",
+            subtitle = "已将教程与公告分开显示，便于查阅。",
+            bodyText = state.tutorial,
+            footerText = "如需再次查看，可在首页点击“使用教程”。",
+            onDismiss = { showGuide = false },
         )
 
         if (state.showDialog) {
@@ -314,7 +322,7 @@ private fun HeaderRow(isDark: Boolean, onToggleTheme: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            AppLogoCompose(size = 44.dp)
+            AppLogoCompose(size = 44.dp, isDark = isDark)
             Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(
                     text = "WANFENG STUDIO",
@@ -323,7 +331,7 @@ private fun HeaderRow(isDark: Boolean, onToggleTheme: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "三角洲启动控制台",
+                    text = "三角洲服务面板",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -360,15 +368,20 @@ private fun HeaderRow(isDark: Boolean, onToggleTheme: () -> Unit) {
             Surface(
                 modifier = Modifier
                     .size(40.dp)
+                    .clip(RoundedCornerShape(16.dp))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
                         onClick = onToggleTheme,
                     ),
-                color = MaterialTheme.colorScheme.surfaceVariant,
+                color = if (isDark) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFEAF3FF),
                 shape = RoundedCornerShape(16.dp),
                 tonalElevation = 0.dp,
                 shadowElevation = 0.dp,
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (isDark) MaterialTheme.colorScheme.outline.copy(alpha = 0.12f) else AccentBlue.copy(alpha = 0.14f)
+                ),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
@@ -382,7 +395,7 @@ private fun HeaderRow(isDark: Boolean, onToggleTheme: () -> Unit) {
 }
 
 @Composable
-private fun AppLogoCompose(size: Dp) {
+private fun AppLogoCompose(size: Dp, isDark: Boolean) {
     val gradient = Brush.linearGradient(listOf(AccentBlue, AccentIndigo, AccentCyan))
     Box(
         modifier = Modifier
@@ -396,8 +409,8 @@ private fun AppLogoCompose(size: Dp) {
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(14.dp))
-                .background(Color(0xFF09101D))
-                .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(14.dp)),
+                .background(if (isDark) Color(0xFF09101D) else Color(0xFFF2F7FF))
+                .border(1.dp, if (isDark) Color.White.copy(alpha = 0.08f) else AccentBlue.copy(alpha = 0.12f), RoundedCornerShape(14.dp)),
             contentAlignment = Alignment.Center,
         ) {
             Box(
@@ -429,15 +442,16 @@ private fun AppLogoCompose(size: Dp) {
 @Composable
 private fun HeroCard(
     isDark: Boolean,
+    state: LauncherUiState,
     quote: String,
-    streak: Int,
     onShowNotice: () -> Unit,
+    onShowGuide: () -> Unit,
 ) {
-    val greeting = remember(streak) { getGreeting(streak) }
+    val greeting = remember { getGreeting() }
     Card(
         shape = RoundedCornerShape(30.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 2.dp else 9.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 2.dp else 7.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
@@ -448,12 +462,12 @@ private fun HeroCard(
                         colors = if (isDark) {
                             listOf(Color(0xFF10192D), MaterialTheme.colorScheme.surface)
                         } else {
-                            listOf(Color(0xFFF7FAFF), MaterialTheme.colorScheme.surface)
+                            listOf(Color(0xFFF2F7FF), MaterialTheme.colorScheme.surface)
                         }
                     )
                 )
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -462,30 +476,38 @@ private fun HeroCard(
             ) {
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(7.dp),
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         MiniChip(
-                            text = "护眼科技主题",
-                            accent = AccentCyan,
+                            text = "游戏 ${state.gameStatus.label()}",
+                            accent = state.gameStatus.dotColor(),
                             isDark = isDark,
                         )
                         MiniChip(
-                            text = "出勤 $streak 天",
-                            accent = AccentBlue,
+                            text = "辅助 ${state.auxStatus.label()}",
+                            accent = state.auxStatus.dotColor(),
+                            isDark = isDark,
+                        )
+                        MiniChip(
+                            text = "服务器 ${state.serverStatus.label()}",
+                            accent = state.serverStatus.dotColor(),
                             isDark = isDark,
                         )
                     }
                     Text(
                         text = greeting.main,
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
                         text = greeting.sub,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        lineHeight = 22.sp,
+                        lineHeight = 20.sp,
                     )
                 }
             }
@@ -493,19 +515,18 @@ private fun HeroCard(
             if (quote.isNotBlank()) {
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(18.dp),
                 ) {
-                    Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+                    Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
                         Text(
-                            text = "今日提示",
+                            text = "寄语",
                             style = MaterialTheme.typography.labelSmall,
                             color = AccentBlue,
                         )
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(3.dp))
                         Text(
-                            text = "「$quote」",
+                            text = quote,
                             style = MaterialTheme.typography.bodySmall,
-                            fontStyle = FontStyle.Italic,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             lineHeight = 18.sp,
                         )
@@ -521,15 +542,24 @@ private fun HeroCard(
                     onClick = onShowNotice,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(18.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = AccentBlue,
+                        contentColor = Color.White,
+                    ),
                 ) {
                     Text("查看公告")
                 }
                 OutlinedButton(
-                    onClick = onShowNotice,
+                    onClick = onShowGuide,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(18.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AccentBlue.copy(alpha = if (isDark) 0.28f else 0.22f)),
+                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                        containerColor = if (isDark) MaterialTheme.colorScheme.surface else Color(0xFFF1F7FF),
+                        contentColor = AccentBlue,
+                    ),
                 ) {
-                    Text("使用说明")
+                    Text("使用教程")
                 }
             }
 
@@ -537,6 +567,8 @@ private fun HeroCard(
                 text = greeting.tip,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -580,7 +612,7 @@ private fun OverviewCard(isDark: Boolean, state: LauncherUiState) {
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text(
-                text = "运行概览",
+                text = "运行状态",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -674,7 +706,7 @@ private fun StatusRow(
                     fontWeight = FontWeight.Medium,
                 )
                 Text(
-                    text = "实时监控",
+                    text = "当前状态",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -815,13 +847,13 @@ private fun LaunchButton(loading: Boolean, enabled: Boolean, isDark: Boolean, on
                             text = when {
                                 loading -> "正在启动中…"
                                 !enabled -> "请等待当前任务完成"
-                                else -> "启动辅助与游戏"
+                                else -> "开始启动"
                             },
                             style = MaterialTheme.typography.titleLarge,
                             color = Color.White,
                         )
                         Text(
-                            text = if (loading) "正在执行启动流程，请勿重复点击" else "冷色科技风控制台 · 一键完成启动流程",
+                            text = if (loading) "正在执行启动流程，请勿重复点击" else "一键完成当前启动流程",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.White.copy(alpha = 0.8f),
                         )
@@ -841,18 +873,11 @@ private fun LaunchButton(loading: Boolean, enabled: Boolean, isDark: Boolean, on
 @Composable
 private fun ActionList(isDark: Boolean, state: LauncherUiState, enabled: Boolean, vm: LauncherViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = "快捷操作",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = "保留功能逻辑不变，只优化卡片层级、动效与视觉观感。",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        Text(
+            text = "快捷操作",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
 
         WideActionCard(
             icon = "🔄",
@@ -1020,31 +1045,37 @@ private fun FooterRow(isDark: Boolean, busy: Boolean) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDark) Color.White.copy(alpha = 0.04f) else MaterialTheme.colorScheme.surface,
+            containerColor = if (isDark) Color.White.copy(alpha = 0.04f) else Color(0xFFF1F7FF),
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 0.dp else 3.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 0.dp else 2.dp),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 14.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
                 Text(
-                    text = "晚风工作室 · v${rememberAppVersionName()}",
-                    style = MaterialTheme.typography.bodySmall,
+                    text = "晚风工作室",
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Medium,
                 )
                 Text(
-                    text = "HarmonyOS Sans · 冷色科技主题 · 护眼浅色模式",
+                    text = "版本 v${rememberAppVersionName()} · 客户服务版",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             MiniChip(
-                text = if (busy) "任务执行中" else "云手机服务正常",
+                text = if (busy) "处理中" else "服务正常",
                 accent = if (busy) AccentBlue else AccentGreen,
                 isDark = isDark,
             )
@@ -1053,19 +1084,16 @@ private fun FooterRow(isDark: Boolean, busy: Boolean) {
 }
 
 @Composable
-private fun NoticeDialog(
+private fun InfoDialog(
     visible: Boolean,
     isDark: Boolean,
-    noticeText: String,
+    title: String,
+    subtitle: String,
+    bodyText: String,
+    footerText: String,
     onDismiss: () -> Unit,
 ) {
     if (!visible) return
-
-    val mergedText = buildString {
-        append(noticeText.ifBlank { "暂无公告" }.trim())
-        append("\n\n")
-        append("本产品仅供学习技术交流使用，严禁用于其他破坏游戏公平性行为。")
-    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1077,12 +1105,12 @@ private fun NoticeDialog(
         title = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "系统公告",
+                    text = title,
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = "请在了解说明后继续使用。",
+                    text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1091,11 +1119,11 @@ private fun NoticeDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Surface(
-                    color = if (isDark) StatusAmber.copy(alpha = 0.12f) else StatusAmber.copy(alpha = 0.08f),
+                    color = if (isDark) StatusAmber.copy(alpha = 0.12f) else StatusAmber.copy(alpha = 0.07f),
                     shape = RoundedCornerShape(16.dp),
                 ) {
                     Text(
-                        text = mergedText,
+                        text = bodyText.ifBlank { "暂无内容" }.trim(),
                         modifier = Modifier.padding(14.dp),
                         color = MaterialTheme.colorScheme.onSurface,
                         lineHeight = 22.sp,
@@ -1103,7 +1131,7 @@ private fun NoticeDialog(
                     )
                 }
                 Text(
-                    text = "如需再次查看，可在首页点击“查看公告”。",
+                    text = footerText,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall,
                 )

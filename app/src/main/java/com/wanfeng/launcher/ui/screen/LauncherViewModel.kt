@@ -31,6 +31,7 @@ data class LauncherUiState(
     val loadingBtn: ButtonKey = ButtonKey.NONE,
     val toasts: List<ToastData> = emptyList(),
     val announcement: String = "",
+    val tutorial: String = "",
     val gameQuote: String = "",
     val dialogMessage: String = "",
     val showDialog: Boolean = false,
@@ -66,20 +67,26 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     // ──────────────────────────────────────────────────────────────────────────
 
     private fun initOnStart() = viewModelScope.launch(Dispatchers.IO) {
-        // 1. 读取公告（本地 assets，不联网）
+        // 1. 读取公告与教程（本地 assets，不联网）
         val announcement =
-            AssetUtil.readText(ctx, "公告.txt")
+            AssetUtil.readText(ctx, "notice.txt")
+                ?: AssetUtil.readText(ctx, "公告.txt")
                 ?: AssetUtil.readText(ctx, "#U516c#U544a.txt")
                 ?: ""
 
-        // 2. 从 guli.txt 随机读取一行作为游戏引言（对应 App.tsx 第87行的 GAME_QUOTE）
+        val tutorial =
+            AssetUtil.readText(ctx, "guide.txt")
+                ?: AssetUtil.readText(ctx, "教程.txt")
+                ?: ""
+
+        // 2. 从本地寄语文件中随机读取一行展示在首页
         val quote = AssetUtil.randomLine(
             ctx,
-            "guli.txt",
-            fallback = "一群勇士曾向人类证明，光明可以在这里生生不竭。"
+            "message.txt",
+            fallback = "欢迎使用晚风工作室服务面板，愿今天一切顺利。"
         )
 
-        _uiState.update { it.copy(announcement = announcement, gameQuote = quote) }
+        _uiState.update { it.copy(announcement = announcement, tutorial = tutorial, gameQuote = quote) }
 
         // 3. 静默执行 fucktmp.sh（忽略结果）
         try {
