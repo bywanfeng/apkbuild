@@ -103,6 +103,8 @@ import com.wanfeng.launcher.ui.theme.StatusRed
 import com.wanfeng.launcher.ui.theme.ToastText
 import kotlinx.coroutines.delay
 import java.util.Calendar
+import androidx.compose.ui.res.painterResource
+import com.wanfeng.launcher.R
 
 private fun Long.toComposeColor() = Color(this)
 private val SpringDefault = spring<Float>(
@@ -180,6 +182,7 @@ private fun Modifier.liquidGlass(
     isDark: Boolean,
     cornerRadius: Dp = 24.dp,
     tintColor: Color = Color.Transparent,
+    topColorStrength: Float = if (isDark) 0.14f else 0.07f,
 ): Modifier = this
     .background(
         brush = if (isDark) Brush.verticalGradient(colors = listOf(p.glassDarkHigh, p.glassDark, Color(0xFF0F0720).copy(alpha = 0.60f)))
@@ -189,7 +192,7 @@ private fun Modifier.liquidGlass(
     .then(
         if (tintColor != Color.Transparent)
             Modifier.background(
-                color = tintColor.copy(alpha = if (isDark) 0.14f else 0.07f),
+                color = tintColor.copy(alpha = topColorStrength),
                 shape = RoundedCornerShape(size = cornerRadius),
             )
         else Modifier
@@ -201,10 +204,10 @@ private fun Modifier.liquidGlass(
         drawRoundRect(
             brush = Brush.verticalGradient(
                 colors = listOf(
-                    if (isDark) Color.White.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.55f),
+                    if (isDark) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.48f),
                     Color.Transparent,
                 ),
-                startY = 0f, endY = size.height * 0.40f,
+                startY = 0f, endY = size.height * 0.42f,
             ),
             cornerRadius = androidx.compose.ui.geometry.CornerRadius(cr, cr),
             size = size,
@@ -380,7 +383,7 @@ private fun AmbientLight(isDark: Boolean, p: ThemePalette) {
 private fun HeaderRow(isDark: Boolean, p: ThemePalette, onToggleTheme: () -> Unit) {
     var time by remember { mutableStateOf(Calendar.getInstance()) }
     LaunchedEffect(Unit) { while (true) { delay(1000L); time = Calendar.getInstance() } }
-    val timeStr = remember(time) { "%02d:%02d".format(time.get(Calendar.HOUR_OF_DAY), time.get(Calendar.MINUTE)) }
+    val timeStr = remember(time) { "%02d:%02d:%02d".format(time.get(Calendar.HOUR_OF_DAY), time.get(Calendar.MINUTE), time.get(Calendar.SECOND)) }
     val dateStr = remember(time) {
         val d = arrayOf("周日","周一","周二","周三","周四","周五","周六")
         "${time.get(Calendar.MONTH)+1}月${time.get(Calendar.DAY_OF_MONTH)}日 ${d[time.get(Calendar.DAY_OF_WEEK)-1]}"
@@ -397,12 +400,52 @@ private fun HeaderRow(isDark: Boolean, p: ThemePalette, onToggleTheme: () -> Uni
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(
-                modifier = Modifier.clip(RoundedCornerShape(18.dp)).liquidGlass(p = p, isDark = isDark, cornerRadius = 18.dp).padding(horizontal = 12.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(18.dp))
+                    // 底色：主色渐变上半截 → 透明，iOS 风格胶囊
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                p.primary.copy(alpha = if (isDark) 0.28f else 0.18f),
+                                p.primary.copy(alpha = if (isDark) 0.10f else 0.06f),
+                            )
+                        ),
+                        shape = RoundedCornerShape(18.dp),
+                    )
+                    .drawWithContent {
+                        drawContent()
+                        // 顶部白色高光条（液态玻璃感）
+                        drawRoundRect(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = if (isDark) 0.16f else 0.45f),
+                                    Color.Transparent,
+                                ),
+                                startY = 0f, endY = size.height * 0.45f,
+                            ),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(18.dp.toPx()),
+                            size = size,
+                        )
+                        // 边框细线
+                        drawRoundRect(
+                            color = p.primary.copy(alpha = if (isDark) 0.35f else 0.22f),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(18.dp.toPx()),
+                            style = Stroke(width = 1.dp.toPx()),
+                            size = size,
+                        )
+                    }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 contentAlignment = Alignment.CenterEnd,
             ) {
                 Column(horizontalAlignment = Alignment.End) {
-                    Text(timeStr, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = p.textPrimary)
-                    Text(dateStr, fontSize = 10.sp, color = p.textSecondary)
+                    Text(
+                        text = timeStr,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        color = p.textPrimary,
+                    )
+                    Text(text = dateStr, fontSize = 10.sp, color = p.textSecondary)
                 }
             }
             Box(
@@ -421,11 +464,58 @@ private fun HeaderRow(isDark: Boolean, p: ThemePalette, onToggleTheme: () -> Uni
 @Composable
 private fun LGLogo(size: Dp, isDark: Boolean, p: ThemePalette) {
     Box(
-        modifier = Modifier.size(size).clip(RoundedCornerShape(size * 0.36f))
-            .liquidGlass(p = p, isDark = isDark, cornerRadius = size * 0.36f, tintColor = p.primary),
-        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(size = size)
+            // iOS 风格圆角：约 22% 边长
+            .clip(RoundedCornerShape(size = size * 0.28f))
+            // 边框发光
+            .drawWithContent {
+                drawContent()
+                val cr = (size.value * 0.28f).dp.toPx()
+                // 顶部主色渐变（仅上半截）
+                drawRoundRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            p.primary.copy(alpha = if (isDark) 0.55f else 0.35f),
+                            Color.Transparent,
+                        ),
+                        startY = 0f,
+                        endY = size.height * 0.52f,
+                    ),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(cr, cr),
+                    size = size,
+                )
+                // 顶部白色高光
+                drawRoundRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color.White.copy(alpha = if (isDark) 0.22f else 0.50f), Color.Transparent),
+                        startY = 0f, endY = size.height * 0.38f,
+                    ),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(cr, cr),
+                    size = size,
+                )
+                // 边框
+                drawRoundRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = if (isDark) 0.30f else 0.70f),
+                            p.primary.copy(alpha = if (isDark) 0.20f else 0.15f),
+                        ),
+                        start = Offset(0f, 0f), end = Offset(size.width, size.height),
+                    ),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(cr, cr),
+                    style = Stroke(width = 1.2.dp.toPx()),
+                    size = size,
+                )
+            },
     ) {
-        Text("▲", fontSize = (size.value * 0.38f).sp, color = if (isDark) p.tertiary.copy(alpha = 0.90f) else p.primary.copy(alpha = 0.85f), fontWeight = FontWeight.Medium)
+        // 图片填充
+        androidx.compose.foundation.Image(
+            painter = painterResource(id = R.drawable.ic_logo),
+            contentDescription = "Logo",
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }
 
@@ -435,7 +525,7 @@ private fun HeroCard(isDark: Boolean, p: ThemePalette, state: LauncherUiState, q
     val greeting = remember { getGreeting() }
     Box(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp))
-            .liquidGlass(p = p, isDark = isDark, cornerRadius = 28.dp, tintColor = p.primary)
+            .liquidGlass(p = p, isDark = isDark, cornerRadius = 28.dp, tintColor = p.primary, topColorStrength = if (isDark) 0.22f else 0.14f)
             .padding(18.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
