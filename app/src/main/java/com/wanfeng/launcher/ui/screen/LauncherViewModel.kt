@@ -1,5 +1,11 @@
 package com.wanfeng.launcher.ui.screen
 
+// 根据时间判断是否深色：19:00-次日07:00 为深色
+private fun isNightTime(): Boolean {
+    val h = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+    return h >= 19 || h < 7
+}
+
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
@@ -23,7 +29,7 @@ enum class ButtonKey  { NONE, LAUNCH, RESTART_AUX, CLOSE_ALL, CLEAN }
 
 // ── UI 状态 ───────────────────────────────────────────────────────────────────
 data class LauncherUiState(
-    val isDark: Boolean = true,
+    val isDark: Boolean = isNightTime(),   // 由时间自动初始化
     val gameStatus: RunStatus = RunStatus.STOPPED,
     val auxStatus: RunStatus = RunStatus.STOPPED,
     val serverStatus: ConnStatus = ConnStatus.DISCONNECTED,
@@ -123,6 +129,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     // ──────────────────────────────────────────────────────────────────────────
 
     fun toggleTheme() = _uiState.update { it.copy(isDark = !it.isDark) }
+
+    /** 每次回到前台时重新按时间刷新（若用户未手动切换过，则跟随时间）*/
+    fun refreshThemeByTime() = _uiState.update { it.copy(isDark = isNightTime()) }
 
     fun dismissDialog() = _uiState.update { it.copy(showDialog = false, dialogMessage = "") }
 

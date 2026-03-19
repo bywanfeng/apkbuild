@@ -559,8 +559,8 @@ private fun LaunchButton(loading: Boolean, enabled: Boolean, isDark: Boolean, p:
                 ) {
                     if (loading) {
                         val rot by rememberInfiniteTransition(label = "spin").animateFloat(0f, 360f, infiniteRepeatable(tween(900, easing = LinearEasing)), label = "r")
-                        Text("↻", Color.White, 22.sp, modifier = Modifier.graphicsLayer { rotationZ = rot })
-                    } else Text("▶", Color.White, 18.sp)
+                        Text(text = "↻", color = Color.White, fontSize = 22.sp, modifier = Modifier.graphicsLayer { rotationZ = rot })
+                    } else Text(text = "▶", color = Color.White, fontSize = 18.sp)
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
