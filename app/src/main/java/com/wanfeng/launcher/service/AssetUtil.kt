@@ -48,7 +48,7 @@ object AssetUtil {
     }
 
     /**
-     * 将 assets/shell/*.sh 复制到 cacheDir，赋予可执行权限。
+     * 将 assets/shell 目录下的脚本文件复制到 cacheDir，并赋予可执行权限。
      * @return 可执行文件的绝对路径
      */
     fun extractScript(context: Context, scriptName: String): String {
