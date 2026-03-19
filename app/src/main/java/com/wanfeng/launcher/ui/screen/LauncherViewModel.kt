@@ -82,7 +82,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         // 2. 从本地寄语文件中随机读取一行展示在首页
         val quote = AssetUtil.randomLine(
             ctx,
-            "message.txt",
+            "guli.txt",
             fallback = "欢迎使用晚风工作室服务面板，愿今天一切顺利。"
         )
 
