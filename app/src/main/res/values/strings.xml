@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">三角洲启动程序</string>
+    <string name="studio_name">晚风工作室</string>
+    <string name="version">v2.4.1</string>
+    <string name="notification_channel_name">安全状态</string>
+    <string name="notification_channel_desc">辅助程序运行状态通知</string>
+    <string name="notification_title">🛡️ 安全扫描</string>
+    <string name="notification_content">状态：正常 | 防护：已启用</string>
+</resources>

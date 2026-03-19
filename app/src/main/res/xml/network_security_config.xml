@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 允许访问目标 IP 的 HTTP 明文流量 -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">183.2.172.46</domain>
+    </domain-config>
+    <!-- 其他域名默认不允许明文 -->
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

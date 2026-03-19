@@ -1,0 +1,3 @@
+-keep class com.wanfeng.launcher.** { *; }
+-keepclassmembers class * extends android.net.VpnService { *; }
+-dontwarn kotlin.**

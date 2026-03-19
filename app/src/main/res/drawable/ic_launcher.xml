@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 应用图标：渐变三角形 Logo（对应 App.tsx 中的 AppLogo SVG） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 背景圆角矩形 -->
+    <path
+        android:pathData="M14,0 L94,0 A14,14 0 0 1 108,14 L108,94 A14,14 0 0 1 94,108 L14,108 A14,14 0 0 1 0,94 L0,14 A14,14 0 0 1 14,0 Z"
+        android:fillColor="#0D1220" />
+
+    <!-- 外三角形描边 (20,7)→(34,31)→(6,31) 缩放到 108 坐标系 -->
+    <path
+        android:pathData="M54,18 L92,84 L16,84 Z"
+        android:fillColor="#00000000"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="3"
+        android:strokeLineJoin="round"
+        android:strokeLineCap="round" />
+
+    <!-- 内三角形填充 (20,14)→(28,28)→(12,28) -->
+    <path
+        android:pathData="M54,38 L75,76 L33,76 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="33"
+                android:startY="38"
+                android:endX="75"
+                android:endY="76"
+                android:type="linear">
+                <item android:offset="0" android:color="#6038BDF8" />
+                <item android:offset="0.55" android:color="#60818CF8" />
+                <item android:offset="1" android:color="#6034D399" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- 中心圆点 -->
+    <path
+        android:pathData="M54,60 m-6,0 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0"
+        android:fillColor="#38BDF8" />
+
+</vector>
