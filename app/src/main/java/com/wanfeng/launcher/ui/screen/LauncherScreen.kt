@@ -391,7 +391,7 @@ private fun HeaderRow(isDark: Boolean, p: ThemePalette, onToggleTheme: () -> Uni
 
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            LGLogo(size = 44.dp, isDark = isDark, p = p)
+            LGLogo(logoSize = 44.dp, isDark = isDark, p = p)
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text("WANFENG STUDIO", fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Medium,
                     color = p.textSecondary)
