@@ -74,6 +74,7 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.wanfeng.launcher.ui.theme.AccentBlue
 import com.wanfeng.launcher.ui.theme.AccentGreen
+import com.wanfeng.launcher.ui.theme.AccentCyan
 import com.wanfeng.launcher.ui.theme.AccentIndigo
 import com.wanfeng.launcher.ui.theme.CardGreen
 import com.wanfeng.launcher.ui.theme.CardRed
@@ -305,18 +306,18 @@ private fun HeaderRow(isDark: Boolean, onToggleTheme: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            AppLogoCompose(size = 42.dp)
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            AppLogoCompose(size = 44.dp)
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(
-                    text = "晚风工作室",
-                    fontSize = 11.sp,
-                    letterSpacing = 2.sp,
+                    text = "WANFENG STUDIO",
+                    style = MaterialTheme.typography.labelSmall,
+                    letterSpacing = 1.8.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "三角洲启动程序",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    text = "三角洲启动控制台",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }
@@ -326,34 +327,44 @@ private fun HeaderRow(isDark: Boolean, onToggleTheme: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = timeStr,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = dateStr,
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(16.dp),
+                tonalElevation = 0.dp,
+                shadowElevation = if (isDark) 0.dp else 2.dp,
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalAlignment = Alignment.End,
+                ) {
+                    Text(
+                        text = timeStr,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = dateStr,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             Surface(
                 modifier = Modifier
-                    .size(38.dp)
+                    .size(40.dp)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
                         onClick = onToggleTheme,
                     ),
                 color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(16.dp),
                 tonalElevation = 0.dp,
                 shadowElevation = 0.dp,
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
-                        text = if (isDark) "☀" else "🌙",
+                        text = if (isDark) "☀" else "◐",
                         fontSize = 16.sp,
                     )
                 }
@@ -364,28 +375,45 @@ private fun HeaderRow(isDark: Boolean, onToggleTheme: () -> Unit) {
 
 @Composable
 private fun AppLogoCompose(size: Dp) {
-    val gradient = Brush.linearGradient(listOf(AccentBlue, AccentIndigo, AccentGreen))
+    val gradient = Brush.linearGradient(listOf(AccentBlue, AccentIndigo, AccentCyan))
     Box(
         modifier = Modifier
             .size(size)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(15.dp))
             .background(gradient)
-            .padding(1.dp),
+            .padding(1.2.dp),
         contentAlignment = Alignment.Center,
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(13.dp))
-                .background(Color(0xFF0B1020)),
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color(0xFF09101D))
+                .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(14.dp)),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = "▲",
-                fontSize = (size.value * 0.42f).sp,
-                color = AccentBlue,
-                fontWeight = FontWeight.Black,
-            )
+            Box(
+                modifier = Modifier
+                    .size(size * 0.56f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                AccentBlue.copy(alpha = 0.14f),
+                                AccentCyan.copy(alpha = 0.08f),
+                            )
+                        )
+                    )
+                    .border(1.dp, AccentBlue.copy(alpha = 0.18f), RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "▲",
+                    fontSize = (size.value * 0.34f).sp,
+                    color = AccentCyan,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
         }
     }
 }
@@ -399,9 +427,9 @@ private fun HeroCard(
 ) {
     val greeting = remember(streak) { getGreeting(streak) }
     Card(
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(30.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 2.dp else 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 2.dp else 9.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
@@ -410,15 +438,9 @@ private fun HeroCard(
                 .background(
                     Brush.verticalGradient(
                         colors = if (isDark) {
-                            listOf(
-                                Color(0xFF131C31),
-                                MaterialTheme.colorScheme.surface,
-                            )
+                            listOf(Color(0xFF10192D), MaterialTheme.colorScheme.surface)
                         } else {
-                            listOf(
-                                Color(0xFFF6F8FD),
-                                MaterialTheme.colorScheme.surface,
-                            )
+                            listOf(Color(0xFFF7FAFF), MaterialTheme.colorScheme.surface)
                         }
                     )
                 )
@@ -432,12 +454,12 @@ private fun HeroCard(
             ) {
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         MiniChip(
-                            text = "稳定模式",
-                            accent = AccentGreen,
+                            text = "护眼科技主题",
+                            accent = AccentCyan,
                             isDark = isDark,
                         )
                         MiniChip(
@@ -448,8 +470,7 @@ private fun HeroCard(
                     }
                     Text(
                         text = greeting.main,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
@@ -464,16 +485,23 @@ private fun HeroCard(
             if (quote.isNotBlank()) {
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(20.dp),
                 ) {
-                    Text(
-                        text = "「$quote」",
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                        fontStyle = FontStyle.Italic,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        lineHeight = 18.sp,
-                    )
+                    Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+                        Text(
+                            text = "今日提示",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = AccentBlue,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "「$quote」",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontStyle = FontStyle.Italic,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 18.sp,
+                        )
+                    }
                 }
             }
 
@@ -544,7 +572,7 @@ private fun OverviewCard(isDark: Boolean, state: LauncherUiState) {
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text(
-                text = "系统状态",
+                text = "运行概览",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -581,7 +609,7 @@ private fun OverviewCard(isDark: Boolean, state: LauncherUiState) {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "CPU 占用",
+                        text = "CPU 负载",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
@@ -638,7 +666,7 @@ private fun StatusRow(
                     fontWeight = FontWeight.Medium,
                 )
                 Text(
-                    text = "状态监控",
+                    text = "实时监控",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -695,7 +723,7 @@ private fun PulseDot(color: Color, pulse: Boolean) {
 private fun LaunchButton(loading: Boolean, isDark: Boolean, onClick: () -> Unit) {
     val borderPulse by rememberInfiniteTransition(label = "launchBtn").animateFloat(
         initialValue = 0.35f,
-        targetValue = 0.8f,
+        targetValue = 0.82f,
         animationSpec = infiniteRepeatable(tween(2200, easing = EaseInOut), RepeatMode.Reverse),
         label = "launchBorder",
     )
@@ -703,14 +731,14 @@ private fun LaunchButton(loading: Boolean, isDark: Boolean, onClick: () -> Unit)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(26.dp),
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 2.dp else 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 2.dp else 10.dp),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(26.dp))
+                .clip(RoundedCornerShape(28.dp))
                 .background(
                     Brush.linearGradient(
                         listOf(LaunchStart, LaunchMid, LaunchEnd),
@@ -718,11 +746,7 @@ private fun LaunchButton(loading: Boolean, isDark: Boolean, onClick: () -> Unit)
                         end = Offset(1200f, 320f),
                     )
                 )
-                .border(
-                    1.dp,
-                    Color.White.copy(alpha = borderPulse * 0.22f),
-                    RoundedCornerShape(26.dp),
-                )
+                .border(1.dp, Color.White.copy(alpha = borderPulse * 0.24f), RoundedCornerShape(28.dp))
                 .clickable(
                     interactionSource = interactionSource,
                     indication = null,
@@ -735,9 +759,9 @@ private fun LaunchButton(loading: Boolean, isDark: Boolean, onClick: () -> Unit)
                     .matchParentSize()
                     .background(
                         Brush.linearGradient(
-                            colors = listOf(Color.White.copy(alpha = 0.12f), Color.Transparent),
+                            colors = listOf(Color.White.copy(alpha = 0.14f), Color.Transparent),
                             start = Offset(0f, 0f),
-                            end = Offset(700f, 360f),
+                            end = Offset(780f, 380f),
                         )
                     )
             )
@@ -753,10 +777,10 @@ private fun LaunchButton(loading: Boolean, isDark: Boolean, onClick: () -> Unit)
                 ) {
                     Surface(
                         color = Color.White.copy(alpha = 0.16f),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(18.dp),
                     ) {
                         Box(
-                            modifier = Modifier.size(48.dp),
+                            modifier = Modifier.size(50.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             if (loading) {
@@ -780,22 +804,21 @@ private fun LaunchButton(loading: Boolean, isDark: Boolean, onClick: () -> Unit)
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
                             text = if (loading) "正在启动中…" else "启动辅助与游戏",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleLarge,
                             color = Color.White,
                         )
                         Text(
-                            text = "一键完成启动流程",
+                            text = "冷色科技风控制台 · 一键完成启动流程",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.78f),
+                            color = Color.White.copy(alpha = 0.8f),
                         )
                     }
                 }
                 Text(
                     text = "›",
                     fontSize = 24.sp,
-                    color = Color.White.copy(alpha = 0.74f),
-                    fontWeight = FontWeight.Bold,
+                    color = Color.White.copy(alpha = 0.76f),
+                    fontWeight = FontWeight.Medium,
                 )
             }
         }
@@ -805,12 +828,18 @@ private fun LaunchButton(loading: Boolean, isDark: Boolean, onClick: () -> Unit)
 @Composable
 private fun ActionList(isDark: Boolean, state: LauncherUiState, vm: LauncherViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(
-            text = "快捷操作",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = "快捷操作",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = "保留功能逻辑不变，只优化卡片层级、动效与视觉观感。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         WideActionCard(
             icon = "↺",
@@ -876,21 +905,24 @@ private fun WideActionCard(
                 indication = null,
                 onClick = onClick,
             ),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDark) {
-                accent.copy(alpha = 0.14f)
-            } else {
-                accent.copy(alpha = 0.08f)
-            }
+            containerColor = if (isDark) accent.copy(alpha = 0.14f) else accent.copy(alpha = 0.08f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 1.dp else 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 1.dp else 5.dp),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, accent.copy(alpha = if (isDark) 0.22f else 0.16f), RoundedCornerShape(22.dp))
-                .padding(horizontal = 16.dp, vertical = 15.dp),
+                .border(1.dp, accent.copy(alpha = if (isDark) 0.22f else 0.16f), RoundedCornerShape(24.dp))
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(accent.copy(alpha = if (isDark) 0.09f else 0.06f), Color.Transparent),
+                        start = Offset(0f, 0f),
+                        end = Offset(1200f, 320f),
+                    )
+                )
+                .padding(horizontal = 16.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -900,10 +932,10 @@ private fun WideActionCard(
             ) {
                 Surface(
                     color = accent.copy(alpha = if (isDark) 0.18f else 0.14f),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(18.dp),
                 ) {
                     Box(
-                        modifier = Modifier.size(48.dp),
+                        modifier = Modifier.size(50.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
@@ -914,11 +946,10 @@ private fun WideActionCard(
                         )
                     }
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     Text(
                         text = title,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -930,12 +961,17 @@ private fun WideActionCard(
                     )
                 }
             }
-            Text(
-                text = if (loading) "执行中" else "进入",
-                style = MaterialTheme.typography.bodySmall,
-                color = accent,
-                fontWeight = FontWeight.Medium,
-            )
+            Surface(
+                color = accent.copy(alpha = if (isDark) 0.16f else 0.12f),
+                shape = RoundedCornerShape(999.dp),
+            ) {
+                Text(
+                    text = if (loading) "执行中" else "进入",
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = accent,
+                )
+            }
         }
     }
 }
@@ -944,7 +980,7 @@ private fun WideActionCard(
 private fun FooterRow(isDark: Boolean) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isDark) Color.White.copy(alpha = 0.04f) else MaterialTheme.colorScheme.surface,
         ),
@@ -964,7 +1000,7 @@ private fun FooterRow(isDark: Boolean) {
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = "界面已优化为护眼浅色与弹窗公告样式",
+                    text = "HarmonyOS Sans · 冷色科技主题 · 护眼浅色模式",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1001,17 +1037,24 @@ private fun NoticeDialog(
             }
         },
         title = {
-            Text(
-                text = "公告",
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "系统公告",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = "请在了解说明后继续使用。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Surface(
                     color = if (isDark) StatusAmber.copy(alpha = 0.12f) else StatusAmber.copy(alpha = 0.08f),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(16.dp),
                 ) {
                     Text(
                         text = mergedText,
@@ -1029,7 +1072,7 @@ private fun NoticeDialog(
             }
         },
         containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(26.dp),
+        shape = RoundedCornerShape(28.dp),
     )
 }
 
@@ -1110,6 +1153,25 @@ private fun BackgroundBlobs(isDark: Boolean) {
                     Brush.radialGradient(
                         colors = listOf(
                             if (isDark) AccentBlue.copy(alpha = 0.12f) else AccentBlue.copy(alpha = 0.06f),
+                            Color.Transparent,
+                        )
+                    ),
+                    CircleShape,
+                )
+        )
+        Box(
+            modifier = Modifier
+                .size(220.dp)
+                .align(Alignment.TopEnd)
+                .graphicsLayer {
+                    translationX = 18f * drift
+                    translationY = -20f + 22f * drift
+                }
+                .blur(84.dp)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            if (isDark) AccentCyan.copy(alpha = 0.10f) else AccentCyan.copy(alpha = 0.045f),
                             Color.Transparent,
                         )
                     ),
