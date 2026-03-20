@@ -108,11 +108,20 @@ object RootUtil {
      * 访问 URL，读取前 20 行内容，判断是否包含 keyword。
      * 返回 null 表示请求失败，返回 String 为原始内容。
      */
-    fun fetchUrl(url: String, timeoutSec: Int = 8): String? {
+    fun fetchUrl(url: String, timeoutSec: Int = 10): String? {
         return try {
-            val (code, stdout, _) =
-                exec("curl -s --connect-timeout $timeoutSec --max-time $timeoutSec '$url' 2>/dev/null | head -20")
-            if (code == 0 && stdout.isNotEmpty()) stdout else null
+            // 与用户验证可用的 curl 命令保持一致：
+            // -L  跟随所有 301/302 跳转（支持多次跳转）
+            // -k  忽略 SSL 证书验证（云手机环境证书链可能不完整）
+            // --max-redirs 5  最多跟 5 次跳转
+            // head -n 20  只取前 20 行
+            // || true  确保管道中任何非 0 退出码不影响整体结果
+            val cmd = "curl -s -L -k --max-redirs 5 " +
+                "--connect-timeout $timeoutSec --max-time $timeoutSec " +
+                "'$url' 2>/dev/null | head -n 20 || true"
+            val (_, stdout, _) = exec(cmd)
+            // 不再依赖 exitCode 判断，只要有内容就返回
+            if (stdout.isNotEmpty()) stdout else null
         } catch (e: Exception) {
             Log.e(TAG, "fetchUrl failed: ${e.message}")
             null

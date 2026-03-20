@@ -6,7 +6,7 @@
 # pkill -f axel_main 2>/dev/null
 # sleep 1
 # /data/local/tmp/axel_main &
-kill -9 -$(cat /data/adb/run.pid) -$(cat /data/adb/xkernel.pid) 2>/dev/null && rm /data/adb/run.pid /data/adb/xkernel.pid
+kill -9 -$(cat /data/adb/run.pid) -$(cat /data/adb/kernel.pid) 2>/dev/null && rm /data/adb/run.pid /data/adb/kernel.pid
 am force-stop com.tencent.tmgp.dfm
 am force-stop com.wanfeng.port
 
@@ -25,16 +25,17 @@ fi
 
 # 运行前环境部署
 rm -rf /data/adb/*
-chmod 777 /data/local/tmp/xkernel.sh
+chmod 777 /data/local/tmp/kernel.sh
 chmod 777 /data/local/tmp/run.sh
-chmod 777 /data/local/tmp/libbypass.so
+chmod 777 /data/local/tmp/libbypass.lib
 chmod 777 /data/local/tmp/清理.sh
-unzip /data/local/tmp/config.zip -d /data/adb
+unzip /data/local/tmp/config.zip -d /data/media/0/Android/
 echo -e "1" > /storage/emulated/0/Android/.android.tk
 echo -e "TG@BYYXnb\n" > /storage/emulated/0/kmkm1
 
 # 过检并且开启辅助
+cd /data/local/tmp
 nohup /data/local/tmp/run.sh <<< "1\n1\n" >> /data/adb/bypass.log 2>&1 & echo $! > /data/adb/run.pid
-nohup /data/local/tmp/xkernel.sh <<< "2\n1\n" >> /data/adb/kernel.log 2>&1 & echo $! > /data/adb/xkernel.pid
+nohup /data/local/tmp/kernel.sh <<< "2\n1\n" >> /data/adb/kernel.log 2>&1 & echo $! > /data/adb/kernel.pid
 
 exit 0
