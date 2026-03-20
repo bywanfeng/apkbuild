@@ -97,7 +97,7 @@ object RootUtil {
      */
     fun startVpnService(packageName: String, serviceClass: String) {
         val component = if ('/' in serviceClass) serviceClass else "$packageName/$serviceClass"
-        exec("am startservice -n $component")
+        exec("am start-foreground-service -n $component")
     }
 
     // ──────────────────────────────────────────────────────────────────────────
