@@ -61,8 +61,8 @@ object NetworkDebugUtil {
             val ms     = System.currentTimeMillis() - t0
 
             // 解析 curl write-out 附加信息
-            val httpStatus   = Regex("HTTP_STATUS_CODE:(\d+)").find(stdout)?.groupValues?.get(1)?.toIntOrNull() ?: -1
-            val redirectCount = Regex("REDIRECT_COUNT:(\d+)").find(stdout)?.groupValues?.get(1) ?: "?"
+            val httpStatus   = Regex("HTTP_STATUS_CODE:(\\d+)").find(stdout)?.groupValues?.get(1)?.toIntOrNull() ?: -1
+            val redirectCount = Regex("REDIRECT_COUNT:(\\d+)").find(stdout)?.groupValues?.get(1) ?: "?"
             val finalUrl     = Regex("FINAL_URL:(.+)").find(stdout)?.groupValues?.get(1)?.trim() ?: url
 
             // 分离响应头（第一个空行之前）和 body
@@ -73,7 +73,7 @@ object NetworkDebugUtil {
             // body 去掉末尾的 write-out 附加信息
             val bodyRaw = if (headerEnd > 0) stdout.substring(headerEnd).trimStart() else stdout
             val body = bodyRaw
-                .replace(Regex("\nHTTP_STATUS_CODE:\d+.*$", RegexOption.DOT_MATCHES_ALL), "")
+                .replace(Regex("\nHTTP_STATUS_CODE:\\d+.*$", RegexOption.DOT_MATCHES_ALL), "")
                 .trim()
 
             // ── 打印完整日志 ──────────────────────────────────────────────────
