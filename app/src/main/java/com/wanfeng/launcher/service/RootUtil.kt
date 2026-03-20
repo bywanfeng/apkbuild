@@ -110,20 +110,17 @@ object RootUtil {
      */
     fun fetchUrl(url: String, timeoutSec: Int = 10): String? {
         return try {
-            // 与用户验证可用的 curl 命令保持一致：
-            // -L  跟随所有 301/302 跳转（支持多次跳转）
-            // -k  忽略 SSL 证书验证（云手机环境证书链可能不完整）
-            // --max-redirs 5  最多跟 5 次跳转
-            // head -n 20  只取前 20 行
-            // || true  确保管道中任何非 0 退出码不影响整体结果
             val cmd = "curl -s -L -k --max-redirs 5 " +
                 "--connect-timeout $timeoutSec --max-time $timeoutSec " +
                 "'$url' 2>/dev/null | head -n 20 || true"
-            val (_, stdout, _) = exec(cmd)
-            // 不再依赖 exitCode 判断，只要有内容就返回
+            Log.d(TAG, "fetchUrl CMD: $cmd")
+            val (code, stdout, stderr) = exec(cmd)
+            Log.d(TAG, "fetchUrl exitCode=$code")
+            Log.d(TAG, "fetchUrl stdout(${stdout.length}chars): ${stdout.take(300)}")
+            if (stderr.isNotEmpty()) Log.w(TAG, "fetchUrl stderr: ${stderr.take(200)}")
             if (stdout.isNotEmpty()) stdout else null
         } catch (e: Exception) {
-            Log.e(TAG, "fetchUrl failed: ${e.message}")
+            Log.e(TAG, "fetchUrl exception: ${e.message}")
             null
         }
     }

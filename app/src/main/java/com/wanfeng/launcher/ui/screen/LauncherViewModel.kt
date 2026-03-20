@@ -244,21 +244,25 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 Log.d(TAG, "[3] start VPN service")
                 RootUtil.startVpnService(AUX_PKG, VPN_SERVICE)
 
-                // ── Step 4: 等待 1.5s ─────────────────────────────────────────
-                delay(1500)
+                // ── Step 4: 等待 VPN 建连（5s）────────────────────────────
+                Log.d(TAG, "[4] waiting 5s for VPN to establish...")
+                delay(5000)
 
                 // ── Step 5: 网络检测（最多重试3次，每次间隔2s）─────────────────
                 Log.d(TAG, "[5] network check: $CHECK_URL keyword='$CHECK_KW'")
                 var networkOk = false
                 for (attempt in 1..3) {
-                    Log.d(TAG, "  attempt $attempt/3")
+                    Log.d(TAG, "[5] attempt $attempt/3 url=$CHECK_URL kw=$CHECK_KW")
                     val body = RootUtil.fetchUrl(CHECK_URL)
+                    Log.d(TAG, "[5] body=${if (body == null) "NULL" else "${body.length}chars: ${body.take(200)}"}")
                     if (body != null && body.contains(CHECK_KW)) {
                         networkOk = true
-                        Log.d(TAG, "  ✓ keyword found")
+                        Log.d(TAG, "[5] keyword FOUND, continuing")
                         break
+                    } else {
+                        Log.w(TAG, "[5] keyword NOT found in body, attempt=$attempt")
                     }
-                    if (attempt < 3) delay(2000)
+                    if (attempt < 3) delay(3000)
                 }
                 if (!networkOk) {
                     showError("三次重启均失败，请联系商户处理！")
