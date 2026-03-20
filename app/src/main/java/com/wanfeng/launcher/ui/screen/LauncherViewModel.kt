@@ -54,7 +54,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         private const val AUX_PKG     = "com.wanfeng.port"
         private const val VPN_SERVICE = "com.wanfeng.port/.service.SimpleVpnService"
         private const val CHECK_URL   = "http://183.2.172.46/"
-        private const val CHECK_KW    = "神念"
+        private const val CHECK_KW    = "花海"
         private const val BYPASS_DST  = "/data/local/tmp"
     }
 

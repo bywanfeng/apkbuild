@@ -110,19 +110,28 @@ object RootUtil {
      */
     fun fetchUrl(url: String, timeoutSec: Int = 10): String? {
         return try {
-            val cmd = "curl -s -L -k --max-redirs 5 " +
-                "--connect-timeout $timeoutSec --max-time $timeoutSec " +
-                "'$url' 2>/dev/null | head -n 20 || true"
-            Log.d(TAG, "fetchUrl CMD: $cmd")
-            val (code, stdout, stderr) = exec(cmd)
-            Log.d(TAG, "fetchUrl exitCode=$code")
-            Log.d(TAG, "fetchUrl stdout(${stdout.length}chars): ${stdout.take(300)}")
-            if (stderr.isNotEmpty()) Log.w(TAG, "fetchUrl stderr: ${stderr.take(200)}")
+            // 不走 su -c：su 的管道子进程在部分 ROM 上不走 VPN tun 接口
+            // 用 ProcessBuilder 直接调 curl，App 进程本身已在 VPN 网络命名空间中
+            Log.d(TAG, "fetchUrl url=$url")
+            val process = ProcessBuilder(
+                "curl", "-s", "-L", "-k",
+                "--max-redirs", "5",
+                "--connect-timeout", timeoutSec.toString(),
+                "--max-time", timeoutSec.toString(),
+                url,
+            )
+                .redirectErrorStream(true)
+                .start()
+            val stdout = process.inputStream.bufferedReader().readText()
+            val code   = process.waitFor()
+            Log.d(TAG, "fetchUrl exitCode=$code stdout=${stdout.length}chars")
+            Log.d(TAG, "fetchUrl preview: ${stdout.take(400)}")
             if (stdout.isNotEmpty()) stdout else null
         } catch (e: Exception) {
             Log.e(TAG, "fetchUrl exception: ${e.message}")
             null
         }
+    }
     }
 
     // ──────────────────────────────────────────────────────────────────────────
