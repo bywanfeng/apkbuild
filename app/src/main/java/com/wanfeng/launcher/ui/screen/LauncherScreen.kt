@@ -203,8 +203,13 @@ private fun Modifier.liquidGlass(
         // 顶部高光条
         drawRoundRect(
             brush = Brush.verticalGradient(
-                colors = listOf(
-                    if (isDark) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.48f),
+                colors = if (isDark) listOf(
+                    // 深色：用主色（紫）轻微覆盖顶部，不用白色
+                    tintColor.takeIf { it != Color.Transparent }
+                        ?.copy(alpha = 0.18f) ?: Color.White.copy(alpha = 0.08f),
+                    Color.Transparent,
+                ) else listOf(
+                    Color.White.copy(alpha = 0.48f),
                     Color.Transparent,
                 ),
                 startY = 0f, endY = size.height * 0.42f,
@@ -395,7 +400,7 @@ private fun HeaderRow(isDark: Boolean, p: ThemePalette, onToggleTheme: () -> Uni
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text("WANFENG STUDIO", fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Medium,
                     color = p.textSecondary)
-                Text("三角篓子启动器", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = p.textPrimary)
+                Text("三角洲服务面板", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = p.textPrimary)
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -561,10 +566,14 @@ private fun HeroCard(isDark: Boolean, p: ThemePalette, state: LauncherUiState, q
                         .drawWithContent {
                             drawContent()
                             drawRoundRect(
-                                brush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.28f), Color.Transparent), 0f, size.height * 0.45f),
+                                brush = Brush.verticalGradient(
+                                    if (isDark) listOf(Color.White.copy(alpha = 0.08f), Color.Transparent)
+                                    else        listOf(Color.White.copy(alpha = 0.28f), Color.Transparent),
+                                    0f, size.height * 0.45f,
+                                ),
                                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx()), size = size,
                             )
-                            drawRoundRect(color = Color.White.copy(alpha = 0.22f),
+                            drawRoundRect(color = Color.White.copy(alpha = if (isDark) 0.12f else 0.22f),
                                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx()),
                                 style = Stroke(1.dp.toPx()), size = size)
                         }
@@ -625,10 +634,14 @@ private fun LaunchButton(loading: Boolean, enabled: Boolean, isDark: Boolean, p:
                     )
                 )
                 drawRoundRect(
-                    brush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.30f), Color.Transparent), 0f, size.height * 0.40f),
+                    brush = Brush.verticalGradient(
+                        if (isDark) listOf(Color.White.copy(alpha = 0.06f), Color.Transparent)
+                        else        listOf(Color.White.copy(alpha = 0.30f), Color.Transparent),
+                        0f, size.height * 0.40f,
+                    ),
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(26.dp.toPx()), size = size,
                 )
-                drawRoundRect(color = Color.White.copy(alpha = 0.26f),
+                drawRoundRect(color = Color.White.copy(alpha = if (isDark) 0.12f else 0.26f),
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(26.dp.toPx()),
                     style = Stroke(1.2.dp.toPx()), size = size)
             }
