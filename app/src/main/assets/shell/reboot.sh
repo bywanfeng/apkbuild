@@ -35,7 +35,9 @@ echo -e "TG@BYYXnb\n" > /storage/emulated/0/kmkm1
 
 # 过检并且开启辅助
 cd /data/local/tmp
-nohup /data/local/tmp/run.sh <<< "1\n1\n" >> /data/adb/bypass.log 2>&1 & echo $! > /data/adb/run.pid
-nohup /data/local/tmp/kernel.sh <<< "2\n1\n" >> /data/adb/kernel.log 2>&1 & echo $! > /data/adb/kernel.pid
-
+echo -e "1\n1\n1\n" | nohup /data/local/tmp/run.sh >> /data/adb/bypass.log 2>&1 &
+echo $! > /data/adb/run.pid
+echo -e "2\n1\n" | nohup /data/local/tmp/kernel.sh >> /data/adb/kernel.log 2>&1 &
+echo $! > /data/adb/kernel.pid
+sleep 3
 exit 0
