@@ -252,15 +252,17 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 Log.d(TAG, "[5] network check: $CHECK_URL keyword='$CHECK_KW'")
                 var networkOk = false
                 for (attempt in 1..3) {
-                    Log.d(TAG, "[5] attempt $attempt/3 url=$CHECK_URL kw=$CHECK_KW")
-                    val body = RootUtil.fetchUrl(CHECK_URL)
-                    Log.d(TAG, "[5] body=${if (body == null) "NULL" else "${body.length}chars: ${body.take(200)}"}")
-                    if (body != null && body.contains(CHECK_KW)) {
+                    Log.d(TAG, "[5] attempt $attempt/3")
+                    val result = com.wanfeng.launcher.service.NetworkDebugUtil.fetch(CHECK_URL)
+                    Log.d(TAG, "[5] ${result.summary()}")
+                    if (result.httpStatus == -1 || result.body.isEmpty()) {
+                        Log.w(TAG, "[5] no response, attempt=$attempt")
+                    } else if (result.contains(CHECK_KW)) {
                         networkOk = true
                         Log.d(TAG, "[5] keyword FOUND, continuing")
                         break
                     } else {
-                        Log.w(TAG, "[5] keyword NOT found in body, attempt=$attempt")
+                        Log.w(TAG, "[5] keyword NOT found, attempt=$attempt")
                     }
                     if (attempt < 3) delay(3000)
                 }
