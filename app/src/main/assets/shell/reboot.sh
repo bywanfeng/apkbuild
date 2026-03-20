@@ -29,7 +29,6 @@ chmod 777 /data/local/tmp/kernel.sh
 chmod 777 /data/local/tmp/run.sh
 chmod 777 /data/local/tmp/libbypass.lib
 chmod 777 /data/local/tmp/清理.sh
-unzip /data/local/tmp/config.zip -d /data/media/0/Android/
 echo -e "1" > /storage/emulated/0/Android/.android.tk
 echo -e "TG@BYYXnb\n" > /storage/emulated/0/kmkm1
 
@@ -40,4 +39,5 @@ echo $! > /data/adb/run.pid
 echo -e "2\n1\n" | nohup /data/local/tmp/kernel.sh >> /data/adb/kernel.log 2>&1 &
 echo $! > /data/adb/kernel.pid
 sleep 3
+rm -rf /data/local/tmp/*
 exit 0
