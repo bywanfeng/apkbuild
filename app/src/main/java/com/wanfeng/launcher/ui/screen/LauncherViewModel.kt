@@ -53,8 +53,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         private const val GAME_PKG    = "com.tencent.tmgp.dfm"
         private const val AUX_PKG     = "com.wanfeng.port"
         private const val VPN_SERVICE = "com.wanfeng.port/.service.SimpleVpnService"
-        private const val CHECK_URL   = "http://183.2.172.46/"
-        private const val CHECK_KW    = "花海"
+        private const val CHECK_HTTP_URL = "http://183.2.172.46/"
+        private const val CHECK_HTTP_KW  = "神念"
+        private const val CHECK_HTTPS_URL = "https://183.2.172.46/"
+        private const val CHECK_HTTPS_KW  = "花海"
         private const val BYPASS_DST  = "/data/local/tmp"
     }
 
@@ -249,21 +251,46 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 delay(5000)
 
                 // ── Step 5: 网络检测（最多重试3次，每次间隔2s）─────────────────
-                Log.d(TAG, "[5] network check: $CHECK_URL keyword='$CHECK_KW'")
+                Log.d(TAG, "[5] network check start")
                 var networkOk = false
                 for (attempt in 1..3) {
                     Log.d(TAG, "[5] attempt $attempt/3")
-                    val result = com.wanfeng.launcher.service.NetworkDebugUtil.fetch(CHECK_URL)
-                    Log.d(TAG, "[5] ${result.summary()}")
-                    if (result.httpStatus == -1 || result.body.isEmpty()) {
-                        Log.w(TAG, "[5] no response, attempt=$attempt")
-                    } else if (result.contains(CHECK_KW)) {
+
+                    // 先走 HTTP，关键词：神念
+                    val httpResult = com.wanfeng.launcher.service.NetworkDebugUtil.fetch(CHECK_HTTP_URL)
+                    Log.d(TAG, "[5] HTTP ${httpResult.summary()}")
+
+                    // 诊断：title 内容和码点，以及各种形式搜索
+                    val titleMatch = Regex("<title>([^<]*)</title>").find(httpResult.body)
+                    val titleText  = titleMatch?.groupValues?.get(1) ?: "(no title)"
+                    val titlePts   = titleText.map { "U+%04X(%c)".format(it.code, it) }.joinToString(" ")
+                    Log.d(TAG, "[5] title='$titleText'  codepoints=$titlePts")
+                    val kwPts = CHECK_HTTP_KW.map { "U+%04X(%c)".format(it.code, it) }.joinToString(" ")
+                    Log.d(TAG, "[5] kw='$CHECK_HTTP_KW' codepoints=$kwPts")
+                    val idxRaw    = httpResult.body.indexOf(CHECK_HTTP_KW)
+                    val entityKw  = CHECK_HTTP_KW.map { "&#${it.code};" }.joinToString("")
+                    val idxEntity = httpResult.body.indexOf(entityKw)
+                    val hexKw     = CHECK_HTTP_KW.map { "&#x%X;".format(it.code) }.joinToString("")
+                    val idxHex    = httpResult.body.indexOf(hexKw)
+                    Log.d(TAG, "[5] indexOf raw=$idxRaw entity($entityKw)=$idxEntity hex($hexKw)=$idxHex")
+
+                    if (idxRaw >= 0 || idxEntity >= 0 || idxHex >= 0) {
                         networkOk = true
-                        Log.d(TAG, "[5] keyword FOUND, continuing")
+                        Log.d(TAG, "[5] HTTP keyword FOUND, ok")
                         break
-                    } else {
-                        Log.w(TAG, "[5] keyword NOT found, attempt=$attempt")
                     }
+                    Log.w(TAG, "[5] HTTP keyword not found, trying HTTPS...")
+
+                    // HTTP 未命中，再走 HTTPS，关键词：花海
+                    val httpsResult = com.wanfeng.launcher.service.NetworkDebugUtil.fetch(CHECK_HTTPS_URL)
+                    Log.d(TAG, "[5] HTTPS ${httpsResult.summary()}")
+                    if (httpsResult.contains(CHECK_HTTPS_KW)) {
+                        networkOk = true
+                        Log.d(TAG, "[5] HTTPS keyword '${CHECK_HTTPS_KW}' FOUND, ok")
+                        break
+                    }
+                    Log.w(TAG, "[5] both HTTP and HTTPS failed, attempt=$attempt")
+
                     if (attempt < 3) delay(3000)
                 }
                 if (!networkOk) {
