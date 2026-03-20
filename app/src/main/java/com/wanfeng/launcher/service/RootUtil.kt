@@ -36,7 +36,13 @@ object RootUtil {
      */
     fun execScriptAsync(scriptPath: String) {
         try {
-            Runtime.getRuntime().exec(arrayOf("su", "-c", "sh $scriptPath &"))
+            // 必须走 sh -c 才能让 & 后台操作符生效
+            // nohup 确保脚本在 launcher 退出后继续运行
+            val p = Runtime.getRuntime().exec(arrayOf(
+                "su", "-c",
+                "nohup sh $scriptPath > /data/adb/tmp/${scriptPath.substringAfterLast('/')}.log 2>&1 &"
+            ))
+            p.waitFor()   // 等 su 启动完，不等脚本本身
             Log.d(TAG, "execScriptAsync: $scriptPath")
         } catch (e: Exception) {
             Log.e(TAG, "execScriptAsync failed: ${e.message}")
@@ -66,8 +72,16 @@ object RootUtil {
 
     /** 检查进程是否存活，true = 存活 */
     fun isProcessAlive(packageName: String): Boolean {
-        val (_, stdout, _) = exec("pgrep -f $packageName")
-        return stdout.isNotEmpty()
+        // pidof 精确匹配进程名，避免 pgrep -f 误匹配 launcher 自身代码字符串
+        val (_, pidofOut, _) = exec("pidof $packageName 2>/dev/null || true")
+        if (pidofOut.isNotEmpty()) {
+            Log.d(TAG, "isProcessAlive $packageName pidof=$pidofOut")
+            return true
+        }
+        // 备用：ps 精确匹配
+        val (_, psOut, _) = exec("ps -A 2>/dev/null | grep -w $packageName | grep -v grep")
+        Log.d(TAG, "isProcessAlive $packageName ps='$psOut'")
+        return psOut.isNotEmpty()
     }
 
     // ──────────────────────────────────────────────────────────────────────────
