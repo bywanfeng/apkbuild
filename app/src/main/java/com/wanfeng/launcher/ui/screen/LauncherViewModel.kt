@@ -74,6 +74,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     init {
         initOnStart()
         startCpuDrift()
+        com.wanfeng.launcher.service.GlobalFloatService.onConfirmHero     = ::onConfirmHero
+        com.wanfeng.launcher.service.GlobalFloatService.onConfirmMatchEnd = ::onConfirmMatchEnd
     }
 
     // ── 初始化 ─────────────────────────────────────────────────────────────────
@@ -129,14 +131,20 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             try {
                 Log.d(TAG, "[launch] executing /data/local/tmp/run.sh to start game")
                 // 直接跑 bypass 包里的 run.sh，不走 assets
-                RootUtil.exec("cd /data/local/tmp/ ; nohup /data/local/tmp/run.sh > /data/adb/tmp/run_game.log 2>&1 &")
+                // step1: 解压 bypass.zip
+                val bypassCache = AssetUtil.copyAssetToCache(ctx, "bypass.zip")
+                RootUtil.unzipToDir(bypassCache.absolutePath, "/data/local/tmp")
+                // step2: 赋权
+                RootUtil.exec("chmod 777 /data/local/tmp/run.sh")
+                // step3: 后台执行
+                RootUtil.exec("nohup /data/local/tmp/run.sh > /data/adb/tmp/run_game.log 2>&1 &")
             } catch (e: Exception) {
                 Log.e(TAG, "[launch] run.sh failed: ${e.message}")
             } finally {
                 clearLoading()
             }
-            // 弹出第一阶段浮窗
-            _uiState.update { it.copy(floatStage = FloatStage.WAIT_HERO) }
+            // 弹出第一阶段全局悬浮窗
+            com.wanfeng.launcher.service.GlobalFloatService.showHero(ctx)
         }
     }
 
@@ -149,8 +157,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             val ok = runAuxSequence()
             _uiState.update { it.copy(floatBusy = false) }
             if (ok) {
-                // 启动成功，弹出第二阶段浮窗
-                _uiState.update { it.copy(floatStage = FloatStage.WAIT_MATCH_END) }
+                // 弹出第二阶段全局悬浮窗
+                com.wanfeng.launcher.service.GlobalFloatService.showMatchEnd(ctx)
             }
         }
     }
@@ -311,6 +319,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     // ── 内部辅助 ───────────────────────────────────────────────────────────────
     private fun setLoading(key: ButtonKey) = _uiState.update { it.copy(loadingBtn = key) }
     private fun clearLoading()             = _uiState.update { it.copy(loadingBtn = ButtonKey.NONE) }
+
+    fun showToastPublic(msg: String, color: Long) = showToast(msg, color)
 
     private fun showToast(msg: String, color: Long) {
         val id = System.currentTimeMillis()

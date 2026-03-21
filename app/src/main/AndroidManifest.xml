@@ -45,6 +45,12 @@
             </intent-filter>
         </activity>
 
+        <!-- 全局悬浮窗前台 Service -->
+        <service
+            android:name=".service.GlobalFloatService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
         <!-- SimpleVpnService：辅助工具拉起入口 -->
         <service
             android:name=".service.SimpleVpnService"

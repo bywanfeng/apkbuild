@@ -19,6 +19,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -323,20 +324,77 @@ fun LauncherScreen(vm: LauncherViewModel = viewModel()) {
             LGAnim(80)  { HeroCard(isDark = isDark, p = p, state = state, quote = state.gameQuote, onShowNotice = { showNotice = true }, onShowGuide = { showGuide = true }) }
             LGAnim(160) { LaunchButton(loading = state.loadingBtn == ButtonKey.LAUNCH, enabled = !isBusy, isDark = isDark, p = p, onClick = vm::onLaunch) }
             LGAnim(220) { ActionList(isDark = isDark, p = p, state = state, enabled = !isBusy, vm = vm) }
-            LGAnim(280) { FooterRow(isDark = isDark, p = p, busy = isBusy) }
+            LGAnim(280) {
+                FooterRow(
+                    isDark = isDark, p = p, busy = isBusy,
+                    onVersionClick = {
+                        logClickCount++
+                        if (logClickCount >= 5) {
+                            logClickCount = 0
+                            showLogDialog = true
+                            logPwdInput   = ""
+                            logPwdError   = false
+                        }
+                    },
+                )
+            }
             Spacer(modifier = Modifier.height(8.dp))
         }
 
         ToastLayer(toasts = state.toasts, onRemove = vm::removeToast)
 
-        // 半透明靠边悬浮窗
-        FloatingOverlay(
-            stage           = state.floatStage,
-            isDark          = isDark,
-            busy            = state.floatBusy,
-            onConfirmHero   = vm::onConfirmHero,
-            onConfirmMatchEnd = vm::onConfirmMatchEnd,
-        )
+        // 连点版本号 5 次 → Log 提取弹窗
+        if (showLogDialog) {
+            AlertDialog(
+                onDismissRequest = { showLogDialog = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        if (logPwdInput == "WanFeng69996@!") {
+                            showLogDialog = false
+                            logPwdError   = false
+                            Thread {
+                                try {
+                                    Runtime.getRuntime().exec(arrayOf(
+                                        "su", "-c",
+                                        "logcat -d -f /sdcard/wf_debug.log -v time 2>&1"
+                                    )).waitFor()
+                                } catch (_: Exception) {}
+                            }.start()
+                            vm.showToastPublic("日志已导出到 /sdcard/wf_debug.log", 0xFF9B6DFF)
+                        } else {
+                            logPwdError = true
+                        }
+                    }) { Text("确认", color = p.primary) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showLogDialog = false }) {
+                        Text("取消", color = p.textSecondary)
+                    }
+                },
+                title = {
+                    Text("开发者选项", color = p.textPrimary, fontWeight = FontWeight.SemiBold)
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        androidx.compose.material3.OutlinedTextField(
+                            value = logPwdInput,
+                            onValueChange = { logPwdInput = it; logPwdError = false },
+                            label = { Text("访问密码") },
+                            singleLine = true,
+                            isError = logPwdError,
+                            visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        )
+                        if (logPwdError) {
+                            Text("密码错误", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                        }
+                    }
+                },
+                containerColor = if (isDark) Color(0xFF1A0D2E).copy(alpha = 0.96f)
+                                 else Color.White.copy(alpha = 0.96f),
+                shape = RoundedCornerShape(24.dp),
+            )
+        }
+
 
         InfoDialog(visible = showNotice, isDark = isDark, p = p, title = "系统公告", subtitle = "请阅读后再继续操作。",
             bodyText = state.announcement, footerText = "可随时点击首页按钮再次查看。", onDismiss = { showNotice = false })
@@ -756,7 +814,7 @@ private fun rememberAppVersionName(): String {
 }
 
 @Composable
-private fun FooterRow(isDark: Boolean, p: ThemePalette, busy: Boolean) {
+private fun FooterRow(isDark: Boolean, p: ThemePalette, busy: Boolean, onVersionClick: () -> Unit = {}) {
     Box(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
             .liquidGlass(p = p, isDark = isDark, cornerRadius = 20.dp).padding(horizontal = 16.dp, vertical = 12.dp),
