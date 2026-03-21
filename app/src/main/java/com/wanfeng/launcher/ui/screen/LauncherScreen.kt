@@ -44,6 +44,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -283,7 +284,11 @@ fun LauncherScreen(vm: LauncherViewModel = viewModel()) {
     val isBusy = state.loadingBtn != ButtonKey.NONE
     var showNotice by rememberSaveable { mutableStateOf(false) }
     var showGuide  by rememberSaveable { mutableStateOf(false) }
-    var autoShown  by rememberSaveable { mutableStateOf(false) }
+    var autoShown     by rememberSaveable { mutableStateOf(false) }
+    var logClickCount by rememberSaveable { mutableStateOf(0) }
+    var showLogDialog by rememberSaveable { mutableStateOf(false) }
+    var logPwdInput   by rememberSaveable { mutableStateOf("") }
+    var logPwdError   by rememberSaveable { mutableStateOf(false) }
 
     // 每分钟检查时间，自动切换主题
     LaunchedEffect(Unit) {
