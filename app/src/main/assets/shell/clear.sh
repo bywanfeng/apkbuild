@@ -4,6 +4,8 @@
 
 # 示例：清理游戏相关缓存
 # pm clear com.tencent.tmgp.dfm 2>/dev/null
+rm -rf /data/local/tmp/*
+rm -rf /data/adb/*
 kill -9 -$(cat /data/adb/run.pid) -$(cat /data/adb/kernel.pid) 2>/dev/null && rm /data/adb/run.pid /data/adb/kernel.pid
 am force-stop com.tencent.tmgp.dfm
 am force-stop com.wanfeng.port

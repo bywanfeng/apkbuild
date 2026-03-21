@@ -329,6 +329,15 @@ fun LauncherScreen(vm: LauncherViewModel = viewModel()) {
 
         ToastLayer(toasts = state.toasts, onRemove = vm::removeToast)
 
+        // 半透明靠边悬浮窗
+        FloatingOverlay(
+            stage           = state.floatStage,
+            isDark          = isDark,
+            busy            = state.floatBusy,
+            onConfirmHero   = vm::onConfirmHero,
+            onConfirmMatchEnd = vm::onConfirmMatchEnd,
+        )
+
         InfoDialog(visible = showNotice, isDark = isDark, p = p, title = "系统公告", subtitle = "请阅读后再继续操作。",
             bodyText = state.announcement, footerText = "可随时点击首页按钮再次查看。", onDismiss = { showNotice = false })
         InfoDialog(visible = showGuide, isDark = isDark, p = p, title = "使用教程", subtitle = "操作说明，按需查阅。",
@@ -687,7 +696,6 @@ private fun ActionList(isDark: Boolean, p: ThemePalette, state: LauncherUiState,
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("快捷操作", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.8.sp,
             color = p.textSecondary, modifier = Modifier.padding(horizontal = 4.dp))
-        LGActionCard("🔄","重启辅助程序","重新载入辅助模块",  CardPurple, state.loadingBtn==ButtonKey.RESTART_AUX, enabled, isDark, p, vm::onRestartAux)
         LGActionCard("🚫","完全关闭辅助","停止所有相关进程",  CardRed,    state.loadingBtn==ButtonKey.CLOSE_ALL,   enabled, isDark, p, vm::onCloseAll)
         LGActionCard("🛡","清理防盗号",  "清理设备并加固账号", CardGreen,  state.loadingBtn==ButtonKey.CLEAN,       enabled, isDark, p, vm::onClean)
     }
