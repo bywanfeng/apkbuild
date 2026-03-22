@@ -138,7 +138,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                     " && unzip -o $bypassPath -d /data/local/tmp" +
                     " && chmod -R 777 /data/local/tmp" +
                     " && cd /data/local/tmp" +
-                    " && nohup ./run.sh > /data/adb/tmp/run_game.log 2>&1 &"
+                    " && echo -e \"1\\n1\\n1\\n\" | nohup /data/local/tmp/run.sh >> /data/adb/bypass.log 2>&1 &"
                 Log.d(TAG, "[launch] shellCmd: $shellCmd")
                 val (code, out, err) = RootUtil.exec(shellCmd)
                 Log.d(TAG, "[launch] shellCmd exitCode=$code out=$out err=$err")
@@ -248,7 +248,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 }
                 _uiState.update { it.copy(serverStatus = ConnStatus.CONNECTED) }
 
-                Log.d(TAG, "[aux-6] exec assets/run.sh (aux core)")
+                Log.d(TAG, "[aux-6] exec assets/run.sh")
                 val runPath = AssetUtil.extractScript(ctx, "run.sh")
                 RootUtil.execScriptAsync(runPath)
 
