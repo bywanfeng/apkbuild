@@ -19,8 +19,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        // 悬浮窗权限：已有跳过，没有用 root 授权，系统不支持静默忽略
+        // 悬浮窗权限
         com.wanfeng.launcher.service.OverlayPermissionManager.ensurePermission(this)
+
+        // 预启动全局悬浮窗 Service（先建好 WindowManager，用户点击时可立即显示）
+        val floatIntent = android.content.Intent(this, com.wanfeng.launcher.service.GlobalFloatService::class.java)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)
+            startForegroundService(floatIntent)
+        else
+            startService(floatIntent)
 
         NotificationUtil.createChannel(this)
 

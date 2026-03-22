@@ -31,18 +31,16 @@ class GlobalFloatService : Service() {
         var onConfirmHero:     (() -> Unit)? = null
         var onConfirmMatchEnd: (() -> Unit)? = null
 
-        fun showHero(context: Context) {
-            context.startService(Intent(context, GlobalFloatService::class.java)
-                .setAction(ACTION_SHOW_HERO))
+        private fun startSvc(context: Context, action: String) {
+            val intent = Intent(context, GlobalFloatService::class.java).setAction(action)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)
+                context.startForegroundService(intent)
+            else
+                context.startService(intent)
         }
-        fun showMatchEnd(context: Context) {
-            context.startService(Intent(context, GlobalFloatService::class.java)
-                .setAction(ACTION_SHOW_MATCH))
-        }
-        fun hide(context: Context) {
-            context.startService(Intent(context, GlobalFloatService::class.java)
-                .setAction(ACTION_HIDE))
-        }
+        fun showHero(context: Context)     = startSvc(context, ACTION_SHOW_HERO)
+        fun showMatchEnd(context: Context) = startSvc(context, ACTION_SHOW_MATCH)
+        fun hide(context: Context)         = startSvc(context, ACTION_HIDE)
     }
 
     private var wm: WindowManager? = null

@@ -137,7 +137,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 // step2: 赋权
                 RootUtil.exec("chmod 777 /data/local/tmp/run.sh")
                 // step3: 后台执行
-                RootUtil.exec("nohup /data/local/tmp/run.sh > /data/adb/tmp/run_game.log 2>&1 &")
+                // 必须套一层 sh -c，& 才在 shell 里生效
+                RootUtil.exec("/bin/sh -c 'nohup /data/local/tmp/run.sh > /data/adb/tmp/run_game.log 2>&1 &'")
             } catch (e: Exception) {
                 Log.e(TAG, "[launch] run.sh failed: ${e.message}")
             } finally {

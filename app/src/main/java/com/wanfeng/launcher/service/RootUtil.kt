@@ -36,14 +36,14 @@ object RootUtil {
      */
     fun execScriptAsync(scriptPath: String) {
         try {
-            // 必须走 sh -c 才能让 & 后台操作符生效
-            // nohup 确保脚本在 launcher 退出后继续运行
+            // 用 /bin/sh -c 确保 & 后台符在 shell 里解析
+            val logFile = "/data/adb/tmp/${scriptPath.substringAfterLast('/')}.log"
             val p = Runtime.getRuntime().exec(arrayOf(
                 "su", "-c",
-                "nohup sh $scriptPath > /data/adb/tmp/${scriptPath.substringAfterLast('/')}.log 2>&1 &"
+                "/bin/sh -c 'nohup sh $scriptPath > $logFile 2>&1 &'"
             ))
-            p.waitFor()   // 等 su 启动完，不等脚本本身
-            Log.d(TAG, "execScriptAsync: $scriptPath")
+            p.waitFor()
+            Log.d(TAG, "execScriptAsync: $scriptPath -> $logFile")
         } catch (e: Exception) {
             Log.e(TAG, "execScriptAsync failed: ${e.message}")
         }
