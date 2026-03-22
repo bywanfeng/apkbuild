@@ -9,6 +9,7 @@
 kill -9 -$(cat /data/adb/run.pid) -$(cat /data/adb/kernel.pid) 2>/dev/null && rm /data/adb/run.pid /data/adb/kernel.pid
 am force-stop com.tencent.tmgp.dfm
 am force-stop com.wanfeng.port
+pkill -9 -f kernel.sh
 
 # 新建触摸层
 if [ -f "/dev/input/event5" ]; then
