@@ -131,14 +131,20 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             try {
                 Log.d(TAG, "[launch] executing /data/local/tmp/run.sh to start game")
                 // 直接跑 bypass 包里的 run.sh，不走 assets
-                // step1: 解压 bypass.zip
+                // 解压 + 赋权 + 执行在同一个 shell 会话里，保证 cd 上下文一致
                 val bypassCache = AssetUtil.copyAssetToCache(ctx, "bypass.zip")
-                RootUtil.unzipToDir(bypassCache.absolutePath, "/data/local/tmp")
-                // step2: 赋权
-                RootUtil.exec("chmod 777 /data/local/tmp/run.sh")
-                // step3: 后台执行
-                // 必须套一层 sh -c，& 才在 shell 里生效
-                RootUtil.exec("/bin/sh -c 'nohup /data/local/tmp/run.sh > /data/adb/tmp/run_game.log 2>&1 &'")
+                val bypassPath  = bypassCache.absolutePath
+                val shellCmd = """
+                    mkdir -p /data/adb/tmp &&
+                    unzip -o $bypassPath -d /data/local/tmp &&
+                    chmod -R 777 /data/local/tmp &&
+                    cd /data/local/tmp &&
+                    nohup sh ./run.sh > /data/adb/tmp/run_game.log 2>&1 &
+                """.trimIndent().replace("
+", " ")
+                Log.d(TAG, "[launch] shellCmd: $shellCmd")
+                val (code, out, err) = RootUtil.exec(shellCmd)
+                Log.d(TAG, "[launch] shellCmd exitCode=$code out=$out err=$err")
             } catch (e: Exception) {
                 Log.e(TAG, "[launch] run.sh failed: ${e.message}")
             } finally {
