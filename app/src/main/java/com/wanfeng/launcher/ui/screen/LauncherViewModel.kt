@@ -138,7 +138,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                     " && unzip -o $bypassPath -d /data/local/tmp" +
                     " && chmod -R 777 /data/local/tmp" +
                     " && cd /data/local/tmp" +
-                    " && nohup sh ./run.sh > /data/adb/tmp/run_game.log 2>&1 &"
+                    " && nohup ./run.sh > /data/adb/tmp/run_game.log 2>&1 &"
                 Log.d(TAG, "[launch] shellCmd: $shellCmd")
                 val (code, out, err) = RootUtil.exec(shellCmd)
                 Log.d(TAG, "[launch] shellCmd exitCode=$code out=$out err=$err")
