@@ -7,42 +7,43 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
+import android.graphics.drawable.GradientDrawable
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
+import android.util.Log
 import android.view.Gravity
 import android.view.WindowManager
-import android.util.Log
-import android.util.TypedValue
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.TextView
 
-/**
- * 系统级全局悬浮窗 Service。
- * TYPE_APPLICATION_OVERLAY — 浮在所有应用上方，游戏时可见。
- * 通过 Intent action 控制显示/隐藏。
- */
 class GlobalFloatService : Service() {
 
     companion object {
-        private const val TAG          = "GlobalFloat"
-        const val ACTION_SHOW_HERO     = "wf.float.SHOW_HERO"
-        const val ACTION_SHOW_MATCH    = "wf.float.SHOW_MATCH_END"
-        const val ACTION_HIDE          = "wf.float.HIDE"
-        const val CHANNEL_ID           = "wf_float_fg"
+        private const val TAG         = "GlobalFloat"
+        const val ACTION_SHOW_HERO    = "wf.float.SHOW_HERO"
+        const val ACTION_SHOW_MATCH   = "wf.float.SHOW_MATCH_END"
+        const val ACTION_HIDE         = "wf.float.HIDE"
+        const val CHANNEL_ID          = "wf_float_fg"
 
         var onConfirmHero:     (() -> Unit)? = null
         var onConfirmMatchEnd: (() -> Unit)? = null
 
-        private fun startSvc(context: Context, action: String) {
-            val intent = Intent(context, GlobalFloatService::class.java).setAction(action)
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)
-                context.startForegroundService(intent)
+        fun startAction(context: Context, action: String) {
+            val i = Intent(context, GlobalFloatService::class.java).setAction(action)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                context.startForegroundService(i)
             else
-                context.startService(intent)
+                context.startService(i)
         }
-        fun showHero(context: Context)     = startSvc(context, ACTION_SHOW_HERO)
-        fun showMatchEnd(context: Context) = startSvc(context, ACTION_SHOW_MATCH)
-        fun hide(context: Context)         = startSvc(context, ACTION_HIDE)
+        fun showHero(context: Context)     = startAction(context, ACTION_SHOW_HERO)
+        fun showMatchEnd(context: Context) = startAction(context, ACTION_SHOW_MATCH)
+        fun hide(context: Context)         = startAction(context, ACTION_HIDE)
     }
 
+    private val mainHandler = Handler(Looper.getMainLooper())
     private var wm: WindowManager? = null
     private var floatView: android.view.View? = null
 
@@ -50,101 +51,96 @@ class GlobalFloatService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannel()
-        val notif = androidx.core.app.NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(com.wanfeng.launcher.R.drawable.ic_launcher)
-            .setContentTitle("晚风服务")
-            .setOngoing(true)
-            .setSilent(true)
-            .build()
-        startForeground(9001, notif)
+        createFgNotification()
         wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        Log.d(TAG, "service created")
+        Log.d(TAG, "onCreate wm=$wm")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d(TAG, "onStartCommand action=${intent?.action}")
         when (intent?.action) {
-            ACTION_SHOW_HERO  -> showFloat(isHero = true)
-            ACTION_SHOW_MATCH -> showFloat(isHero = false)
-            ACTION_HIDE       -> removeFloat()
+            ACTION_SHOW_HERO  -> mainHandler.post { showFloat(isHero = true) }
+            ACTION_SHOW_MATCH -> mainHandler.post { showFloat(isHero = false) }
+            ACTION_HIDE       -> mainHandler.post { removeFloat() }
         }
         return START_STICKY
     }
 
-    override fun onDestroy() { removeFloat(); super.onDestroy() }
+    override fun onDestroy() {
+        mainHandler.post { removeFloat() }
+        super.onDestroy()
+    }
 
     private fun showFloat(isHero: Boolean) {
         removeFloat()
-        val isDark    = isNightTime()
-        val accentInt = if (isDark) Color.parseColor("#9B6DFF") else Color.parseColor("#3D7EFF")
-        val bgInt     = if (isDark) Color.parseColor("#CC0F0C1E") else Color.parseColor("#CCE8F3FF")
-        val textInt   = if (isDark) Color.WHITE else Color.parseColor("#0D1E35")
-        val dp        = resources.displayMetrics.density
+        val dp      = resources.displayMetrics.density
+        val isDark  = isNightTime()
+        val accent  = if (isDark) Color.parseColor("#9B6DFF") else Color.parseColor("#3D7EFF")
+        val bgAlpha = if (isDark) Color.parseColor("#CC0F0C1E") else Color.parseColor("#CCE8F3FF")
+        val textClr = if (isDark) Color.WHITE else Color.parseColor("#0D1E35")
+        val pad     = (16 * dp).toInt()
 
-        val root = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
+        // 根容器
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             gravity     = Gravity.CENTER_HORIZONTAL
-            val pad     = (18 * dp).toInt()
             setPadding(pad, (20 * dp).toInt(), pad, (20 * dp).toInt())
-            background  = android.graphics.drawable.GradientDrawable().apply {
-                setColor(bgInt)
+            background  = GradientDrawable().apply {
+                setColor(bgAlpha)
                 cornerRadius = 40f * dp
-                setStroke((1.5f * dp).toInt(), accentInt)
+                setStroke((2 * dp).toInt(), accent)
             }
         }
 
-        // 图标
-        root.addView(android.widget.TextView(this).apply {
+        root.addView(TextView(this).apply {
             text     = if (isHero) "⚔️" else "🏁"
             textSize = 22f
             gravity  = Gravity.CENTER
         })
 
-        // 说明文字
-        root.addView(android.widget.TextView(this).apply {
+        root.addView(TextView(this).apply {
             text     = if (isHero) "已拉起游戏\n是否进入\n选英雄界面？"
                        else        "本局对局\n是否结束？"
             textSize = 12f
-            setTextColor(textInt)
+            setTextColor(textClr)
             gravity  = Gravity.CENTER
-            val vpad = (12 * dp).toInt()
-            setPadding(0, vpad, 0, vpad)
+            setPadding(0, (10 * dp).toInt(), 0, (10 * dp).toInt())
         })
 
-        // 按钮
-        root.addView(android.widget.Button(this).apply {
+        root.addView(Button(this).apply {
             text     = "是"
             textSize = 14f
             setTextColor(Color.WHITE)
-            background = android.graphics.drawable.GradientDrawable().apply {
+            background = GradientDrawable().apply {
                 colors = if (isDark)
                     intArrayOf(Color.parseColor("#7C3AED"), Color.parseColor("#9B6DFF"))
                 else
                     intArrayOf(Color.parseColor("#3D7EFF"), Color.parseColor("#5B8EFF"))
-                orientation  = android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT
+                orientation  = GradientDrawable.Orientation.LEFT_RIGHT
                 cornerRadius = 28f * dp
             }
-            val hpad = (28 * dp).toInt(); val vpad = (10 * dp).toInt()
-            setPadding(hpad, vpad, hpad, vpad)
+            val hp = (24 * dp).toInt(); val vp = (8 * dp).toInt()
+            setPadding(hp, vp, hp, vp)
             setOnClickListener {
                 removeFloat()
                 if (isHero) onConfirmHero?.invoke() else onConfirmMatchEnd?.invoke()
             }
         })
 
+        // WindowManager 参数
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
         else
-            @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE
+            @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
 
         val params = WindowManager.LayoutParams(
-            (152 * dp).toInt(),
+            (148 * dp).toInt(),
             WindowManager.LayoutParams.WRAP_CONTENT,
             type,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            PixelFormat.TRANSLUCENT,
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+            PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.END or Gravity.CENTER_VERTICAL
             x = (12 * dp).toInt()
@@ -152,17 +148,17 @@ class GlobalFloatService : Service() {
         }
 
         try {
-            wm?.addView(root, params)
+            wm!!.addView(root, params)
             floatView = root
-            Log.d(TAG, "showFloat isHero=$isHero")
+            Log.d(TAG, "addView OK isHero=$isHero type=$type")
         } catch (e: Exception) {
-            Log.e(TAG, "addView failed: ${e.message}")
+            Log.e(TAG, "addView FAILED: ${e.javaClass.simpleName}: ${e.message}")
         }
     }
 
     private fun removeFloat() {
         floatView?.let {
-            try { wm?.removeView(it) } catch (_: Exception) {}
+            try { wm?.removeViewImmediate(it) } catch (_: Exception) {}
             floatView = null
         }
     }
@@ -172,11 +168,20 @@ class GlobalFloatService : Service() {
         return h >= 19 || h < 7
     }
 
-    private fun createNotificationChannel() {
+    private fun createFgNotification() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val ch = NotificationChannel(CHANNEL_ID, "晚风悬浮窗", NotificationManager.IMPORTANCE_MIN)
             ch.setShowBadge(false)
-            (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(ch)
+            (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                .createNotificationChannel(ch)
         }
+        val notif = androidx.core.app.NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(com.wanfeng.launcher.R.drawable.ic_launcher)
+            .setContentTitle("晚风服务运行中")
+            .setOngoing(true)
+            .setSilent(true)
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_MIN)
+            .build()
+        startForeground(9001, notif)
     }
 }
