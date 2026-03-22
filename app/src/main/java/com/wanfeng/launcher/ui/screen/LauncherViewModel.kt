@@ -248,7 +248,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 }
                 _uiState.update { it.copy(serverStatus = ConnStatus.CONNECTED) }
 
-                Log.d(TAG, "[aux-6] exec assets/run.sh")
+                Log.d(TAG, "[aux-6] exec assets/run.sh (aux core)")
                 val runPath = AssetUtil.extractScript(ctx, "run.sh")
                 RootUtil.execScriptAsync(runPath)
 
