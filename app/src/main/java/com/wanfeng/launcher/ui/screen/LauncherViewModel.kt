@@ -19,7 +19,7 @@ import kotlinx.coroutines.withContext
 
 private fun isNightTime(): Boolean {
     val h = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-    return h >= 19 || h < 7
+    return h < 6 || h >= 18
 }
 
 // ── 浮窗阶段 ──────────────────────────────────────────────────────────────────
@@ -48,6 +48,8 @@ data class LauncherUiState(
     val showDialog: Boolean = false,
     val floatStage: FloatStage = FloatStage.NONE,
     val floatBusy: Boolean = false,   // 浮窗后台执行中，防止重复点击
+    val matchCount: Int = 0,           // 累计完成对局数
+    val showDeliveryHint: Boolean = false, // 第3局后显示收货提醒
 )
 
 data class ToastData(val id: Long, val msg: String, val color: Long)
@@ -76,6 +78,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         startCpuDrift()
         com.wanfeng.launcher.service.GlobalFloatService.onConfirmHero     = ::onConfirmHero
         com.wanfeng.launcher.service.GlobalFloatService.onConfirmMatchEnd = ::onConfirmMatchEnd
+        com.wanfeng.launcher.service.GlobalFloatService.onStopAll         = ::onStopAllFromFloat
     }
 
     // ── 初始化 ─────────────────────────────────────────────────────────────────
@@ -114,6 +117,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     fun toggleTheme()         = _uiState.update { it.copy(isDark = !it.isDark) }
     fun refreshThemeByTime()  = _uiState.update { it.copy(isDark = isNightTime()) }
     fun dismissDialog()       = _uiState.update { it.copy(showDialog = false, dialogMessage = "") }
+    fun dismissDeliveryHint() = _uiState.update { it.copy(showDeliveryHint = false) }
     fun removeToast(id: Long) = _uiState.update { s -> s.copy(toasts = s.toasts.filter { it.id != id }) }
 
     // ── 第一阶段：点击启动按钮 ─────────────────────────────────────────────────
@@ -171,10 +175,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     // 执行 stop.sh，等 3 秒，闭环回到拉起游戏
     fun onConfirmMatchEnd() {
         if (_uiState.value.floatBusy) return
-        _uiState.update { it.copy(floatBusy = true, floatStage = FloatStage.NONE) }
+        val newCount = _uiState.value.matchCount + 1
+        _uiState.update { it.copy(floatBusy = true, floatStage = FloatStage.NONE, matchCount = newCount) }
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                Log.d(TAG, "[end] running stop.sh")
+                Log.d(TAG, "[end] running stop.sh, matchCount=$newCount")
                 val stopPath = AssetUtil.extractScript(ctx, "stop.sh")
                 RootUtil.execScript(stopPath)
                 _uiState.update { it.copy(
@@ -188,7 +193,6 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 Log.e(TAG, "[end] stop.sh failed: ${e.message}")
             }
             _uiState.update { it.copy(floatBusy = false) }
-            // 闭环：重新拉起游戏
             onLaunch()
         }
     }
@@ -301,6 +305,16 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 clearLoading()
             }
         }
+    }
+
+    fun onStopAllFromFloat() {
+        _uiState.update { it.copy(
+            gameStatus   = RunStatus.STOPPED,
+            auxStatus    = RunStatus.STOPPED,
+            serverStatus = ConnStatus.DISCONNECTED,
+            floatStage   = FloatStage.NONE,
+        )}
+        showToast("辅助已关闭", 0xFFEF4444)
     }
 
     fun onClean() {

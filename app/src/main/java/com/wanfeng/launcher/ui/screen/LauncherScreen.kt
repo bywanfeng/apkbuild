@@ -301,15 +301,20 @@ fun LauncherScreen(vm: LauncherViewModel = viewModel()) {
         if (state.announcement.isNotBlank() && !autoShown) { showNotice = true; autoShown = true }
     }
 
+    // 深浅色1秒平滑渐变
+    val bgC by androidx.compose.animation.animateColorAsState(
+        if (isDark) Color(0xFF130920) else Color(0xFFE8F3FF),
+        androidx.compose.animation.core.tween(1000), label = "bgC")
+    val bgM by androidx.compose.animation.animateColorAsState(
+        if (isDark) Color(0xFF0A0714) else Color(0xFFD8ECFF),
+        androidx.compose.animation.core.tween(1000), label = "bgM")
+    val bgE by androidx.compose.animation.animateColorAsState(
+        if (isDark) Color(0xFF060410) else Color(0xFFC5E0FF),
+        androidx.compose.animation.core.tween(1000), label = "bgE")
+
     Box(
         modifier = Modifier.fillMaxSize().background(
-            brush = Brush.radialGradient(
-                colors = if (isDark)
-                    listOf(Color(0xFF130920), Color(0xFF0A0714), Color(0xFF060410))
-                else
-                    listOf(Color(0xFFE8F3FF), Color(0xFFD8ECFF), Color(0xFFC5E0FF)),
-                radius = 2000f,
-            )
+            brush = Brush.radialGradient(colors = listOf(bgC, bgM, bgE), radius = 2000f)
         )
     ) {
         AmbientLight(isDark = isDark, p = p)
@@ -347,6 +352,37 @@ fun LauncherScreen(vm: LauncherViewModel = viewModel()) {
         }
 
         ToastLayer(toasts = state.toasts, onRemove = vm::removeToast)
+
+        // 收货提醒：第3局后游戏进程刚起时顶部显示3秒
+        androidx.compose.animation.AnimatedVisibility(
+            visible = state.showDeliveryHint,
+            enter = androidx.compose.animation.fadeIn(
+                androidx.compose.animation.core.tween(400)) +
+                androidx.compose.animation.slideInVertically(
+                    androidx.compose.animation.core.tween(400)) { -it },
+            exit  = androidx.compose.animation.fadeOut(
+                androidx.compose.animation.core.tween(400)) +
+                androidx.compose.animation.slideOutVertically(
+                    androidx.compose.animation.core.tween(400)) { -it },
+            modifier = Modifier.align(Alignment.TopCenter).zIndex(15f),
+        ) {
+            Box(
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(top = 12.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(if (isDark) Color(0xEE1A0D2E) else Color(0xEEEAF3FF))
+                    .border(1.dp, p.primary.copy(alpha = 0.30f), RoundedCornerShape(20.dp))
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
+            ) {
+                Text(
+                    text = "感觉好用的话，记得回启动器确认收货哦 😊",
+                    fontSize = 13.sp,
+                    color = p.textPrimary,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        }
 
         // 连点版本号 5 次 → Log 提取弹窗
         if (showLogDialog) {

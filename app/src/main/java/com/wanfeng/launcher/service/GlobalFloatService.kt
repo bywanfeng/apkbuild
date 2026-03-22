@@ -1,5 +1,6 @@
 package com.wanfeng.launcher.service
 
+import android.app.AlertDialog
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
@@ -30,6 +31,7 @@ class GlobalFloatService : Service() {
 
         var onConfirmHero:     (() -> Unit)? = null
         var onConfirmMatchEnd: (() -> Unit)? = null
+        var onStopAll:         (() -> Unit)? = null  // 关闭时执行 stop.sh
 
         fun showHero(context: Context)     = start(context, ACTION_SHOW_HERO)
         fun showMatchEnd(context: Context) = start(context, ACTION_SHOW_MATCH)
@@ -43,8 +45,8 @@ class GlobalFloatService : Service() {
     private val handler  = Handler(Looper.getMainLooper())
     private var wm: WindowManager? = null
     private var floatView: android.view.View? = null
-    private var isCollapsed = false   // 当前是否折叠成小点
-    private var currentIsHero = true  // 记住当前阶段，展开时用
+    private var isCollapsed   = false
+    private var currentIsHero = true
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -55,7 +57,6 @@ class GlobalFloatService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(TAG, "onStartCommand action=${intent?.action}")
         when (intent?.action) {
             ACTION_SHOW_HERO  -> handler.post { currentIsHero = true;  showExpanded() }
             ACTION_SHOW_MATCH -> handler.post { currentIsHero = false; showExpanded() }
@@ -72,19 +73,21 @@ class GlobalFloatService : Service() {
     // ── 展开的完整悬浮窗 ──────────────────────────────────────────────────────
     private fun showExpanded() {
         removeFloat()
-        isCollapsed  = false
-        val isHero   = currentIsHero
-        val dp       = resources.displayMetrics.density
-        val isDark   = isNightTime()
-        val accent   = if (isDark) Color.parseColor("#9B6DFF") else Color.parseColor("#3D7EFF")
-        val bg       = if (isDark) Color.parseColor("#CC0F0C1E") else Color.parseColor("#CCE8F3FF")
-        val fg       = if (isDark) Color.WHITE else Color.parseColor("#0D1E35")
-        val p        = (14 * dp).toInt()
+        isCollapsed = false
+        val isHero  = currentIsHero
+        val dp      = resources.displayMetrics.density
+        val isDark  = isNightTime()
+        val accent  = if (isDark) Color.parseColor("#9B6DFF") else Color.parseColor("#3D7EFF")
+        val bg      = if (isDark) Color.parseColor("#E00F0C1E") else Color.parseColor("#E0E8F3FF")
+        val fg      = if (isDark) Color.WHITE else Color.parseColor("#0D1E35")
+        val fgSub   = if (isDark) Color.parseColor("#AAAAAA") else Color.parseColor("#666666")
+        val redClr  = Color.parseColor("#EF4444")
+        val p       = (14 * dp).toInt()
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity     = Gravity.CENTER_HORIZONTAL
-            setPadding(p, (18 * dp).toInt(), p, (18 * dp).toInt())
+            setPadding(p, (14 * dp).toInt(), p, (14 * dp).toInt())
             background  = GradientDrawable().apply {
                 setColor(bg)
                 cornerRadius = 40f * dp
@@ -92,40 +95,74 @@ class GlobalFloatService : Service() {
             }
         }
 
-        // ── 顶部：折叠按钮 ────────────────────────────────────────────────────
-        val collapseBtn = TextView(this).apply {
-            text     = "—"
-            textSize = 12f
-            setTextColor(if (isDark) Color.parseColor("#9B6DFF") else Color.parseColor("#3D7EFF"))
-            gravity  = Gravity.END or Gravity.CENTER_VERTICAL
-            setPadding(0, 0, 0, (4 * dp).toInt())
-            setOnClickListener { handler.post { showCollapsed() } }
+        // ── 第一行：缩小按钮 + 关闭按钮 ──────────────────────────────────────
+        val topRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity     = Gravity.CENTER_VERTICAL
         }
-        root.addView(collapseBtn)
+
+        // 缩小按钮（左）
+        topRow.addView(TextView(this).apply {
+            text     = "收起"
+            textSize = 10f
+            setTextColor(fgSub)
+            setPadding(0, 0, (10 * dp).toInt(), 0)
+            setOnClickListener { handler.post { showCollapsed() } }
+        })
+
+        // 占位撑开
+        topRow.addView(android.widget.Space(this).apply {
+            layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
+        })
+
+        // 关闭按钮（右）
+        topRow.addView(TextView(this).apply {
+            text     = "关闭辅助"
+            textSize = 10f
+            setTextColor(redClr)
+            setOnClickListener {
+                // 全屏二次确认弹窗
+                handler.post { showStopConfirmDialog() }
+            }
+        })
+
+        root.addView(topRow)
+
+        // ── 分割线 ────────────────────────────────────────────────────────────
+        root.addView(android.view.View(this).apply {
+            setBackgroundColor(if (isDark) Color.parseColor("#33FFFFFF") else Color.parseColor("#22000000"))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, (1 * dp).toInt()
+            ).apply { setMargins(0, (6 * dp).toInt(), 0, (10 * dp).toInt()) }
+        })
 
         // ── 图标 ──────────────────────────────────────────────────────────────
         root.addView(TextView(this).apply {
             text     = if (isHero) "⚔️" else "🏁"
-            textSize = 20f; gravity = Gravity.CENTER
+            textSize = 22f; gravity = Gravity.CENTER
         })
 
-        // ── 提示文字 ──────────────────────────────────────────────────────────
+        // ── 主提示文字 ────────────────────────────────────────────────────────
         root.addView(TextView(this).apply {
-            text     = if (isHero) "已拉起游戏\n是否进入\n选英雄界面？" else "本局对局\n是否结束？"
-            textSize = 11f; setTextColor(fg); gravity = Gravity.CENTER
-            setPadding(0, (8 * dp).toInt(), 0, (8 * dp).toInt())
+            text = if (isHero)
+                "已进入选人界面了吗？\n\n确认后辅助自动启动"
+            else
+                "这局打完了吗？\n\n确认后自动重启下一局"
+            textSize = 12f; setTextColor(fg); gravity = Gravity.CENTER
+            setPadding(0, (8 * dp).toInt(), 0, (10 * dp).toInt())
         })
 
-        // ── 确认按钮 ──────────────────────────────────────────────────────────
+        // ── 主操作按钮 ────────────────────────────────────────────────────────
         root.addView(android.widget.Button(this).apply {
-            text = "是"; textSize = 13f; setTextColor(Color.WHITE)
+            text = if (isHero) "✓  进了，启动辅助" else "✓  打完了，下一局"
+            textSize = 12f; setTextColor(Color.WHITE)
             background = GradientDrawable().apply {
                 colors = if (isDark) intArrayOf(Color.parseColor("#7C3AED"), Color.parseColor("#9B6DFF"))
                          else        intArrayOf(Color.parseColor("#3D7EFF"), Color.parseColor("#5B8EFF"))
-                orientation = GradientDrawable.Orientation.LEFT_RIGHT
+                orientation  = GradientDrawable.Orientation.LEFT_RIGHT
                 cornerRadius = 28f * dp
             }
-            val hp = (20 * dp).toInt(); val vp = (7 * dp).toInt()
+            val hp = (18 * dp).toInt(); val vp = (8 * dp).toInt()
             setPadding(hp, vp, hp, vp)
             setOnClickListener {
                 removeFloat()
@@ -133,8 +170,39 @@ class GlobalFloatService : Service() {
             }
         })
 
-        addToWindow(root, (140 * dp).toInt())
+        addToWindow(root, (148 * dp).toInt())
         upgradeForeground()
+    }
+
+    // ── 关闭辅助二次确认（AlertDialog 全屏弹窗）─────────────────────────────
+    private fun showStopConfirmDialog() {
+        val isDark = isNightTime()
+        val builder = AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
+        builder.setTitle("⚠️  确认关闭辅助？")
+        builder.setMessage("点击确认后将：\n\n• 停止所有辅助进程\n• 关闭游戏\n• 退出辅助服务\n\n如需重新使用，请回到启动器重新启动。")
+        builder.setPositiveButton("确认关闭") { _, _ ->
+            removeFloat()
+            // 执行 stop.sh 并通知 ViewModel
+            Thread {
+                try {
+                    val stopPath = AssetUtil.extractScript(this, "stop.sh")
+                    RootUtil.execScript(stopPath)
+                    Log.d(TAG, "stop.sh done")
+                } catch (e: Exception) {
+                    Log.e(TAG, "stop.sh failed: ${e.message}")
+                }
+                onStopAll?.invoke()
+            }.start()
+        }
+        builder.setNegativeButton("取消", null)
+        val dialog = builder.create()
+        dialog.window?.setType(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            else
+                @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
+        )
+        dialog.show()
     }
 
     // ── 折叠成右侧小圆点 ──────────────────────────────────────────────────────
@@ -149,12 +217,12 @@ class GlobalFloatService : Service() {
         val dot = FrameLayout(this).apply {
             background = GradientDrawable().apply {
                 shape        = GradientDrawable.OVAL
-                setColor(accent.and(0x00FFFFFF.or(0xBB000000.toInt())))  // 半透明
+                setColor(Color.argb(0xBB,
+                    Color.red(accent), Color.green(accent), Color.blue(accent)))
                 setStroke((2 * dp).toInt(), accent)
             }
             setOnClickListener { handler.post { showExpanded() } }
         }
-        // 中心小三角指示
         dot.addView(TextView(this).apply {
             text     = "◀"
             textSize = 10f
@@ -167,12 +235,16 @@ class GlobalFloatService : Service() {
         })
 
         addToWindow(dot, size, height = size, offsetX = (4 * dp).toInt())
-        // 折叠状态也保持前台（悬浮窗还在，仍需保活）
         upgradeForeground()
     }
 
     // ── WindowManager addView ─────────────────────────────────────────────────
-    private fun addToWindow(view: android.view.View, width: Int, height: Int = WindowManager.LayoutParams.WRAP_CONTENT, offsetX: Int = (12 * resources.displayMetrics.density).toInt()) {
+    private fun addToWindow(
+        view: android.view.View,
+        width: Int,
+        height: Int = WindowManager.LayoutParams.WRAP_CONTENT,
+        offsetX: Int = (12 * resources.displayMetrics.density).toInt()
+    ) {
         @Suppress("DEPRECATION")
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -190,7 +262,7 @@ class GlobalFloatService : Service() {
         try {
             wm!!.addView(view, params)
             floatView = view
-            Log.d(TAG, "addToWindow OK collapsed=$isCollapsed")
+            Log.d(TAG, "addToWindow OK")
         } catch (e: Exception) {
             Log.e(TAG, "addToWindow FAILED: ${e.javaClass.simpleName}: ${e.message}")
         }
@@ -204,7 +276,6 @@ class GlobalFloatService : Service() {
         degradeForeground()
     }
 
-    // ── 前台保活 ──────────────────────────────────────────────────────────────
     private fun upgradeForeground() {
         createFgChannel()
         val notif = androidx.core.app.NotificationCompat.Builder(this, CHANNEL_ID)
@@ -231,5 +302,5 @@ class GlobalFloatService : Service() {
     }
 
     private fun isNightTime() =
-        java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY).let { it >= 19 || it < 7 }
+        java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY).let { it < 6 || it >= 18 }
 }
