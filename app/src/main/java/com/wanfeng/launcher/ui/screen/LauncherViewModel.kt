@@ -131,17 +131,14 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             try {
                 Log.d(TAG, "[launch] executing /data/local/tmp/run.sh to start game")
                 // 直接跑 bypass 包里的 run.sh，不走 assets
-                // 解压 + 赋权 + 执行在同一个 shell 会话里，保证 cd 上下文一致
+                // 解压 + 赋权 + 执行：单个 shell 会话，cd 上下文一致
                 val bypassCache = AssetUtil.copyAssetToCache(ctx, "bypass.zip")
                 val bypassPath  = bypassCache.absolutePath
-                val shellCmd = """
-                    mkdir -p /data/adb/tmp &&
-                    unzip -o $bypassPath -d /data/local/tmp &&
-                    chmod -R 777 /data/local/tmp &&
-                    cd /data/local/tmp &&
-                    nohup sh ./run.sh > /data/adb/tmp/run_game.log 2>&1 &
-                """.trimIndent().replace("
-", " ")
+                val shellCmd = "mkdir -p /data/adb/tmp" +
+                    " && unzip -o $bypassPath -d /data/local/tmp" +
+                    " && chmod -R 777 /data/local/tmp" +
+                    " && cd /data/local/tmp" +
+                    " && nohup sh ./run.sh > /data/adb/tmp/run_game.log 2>&1 &"
                 Log.d(TAG, "[launch] shellCmd: $shellCmd")
                 val (code, out, err) = RootUtil.exec(shellCmd)
                 Log.d(TAG, "[launch] shellCmd exitCode=$code out=$out err=$err")
