@@ -19,15 +19,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        // 悬浮窗权限
-        com.wanfeng.launcher.service.OverlayPermissionManager.ensurePermission(this)
+        // 预启动全局悬浮窗 Service（普通 startService，不需要前台）
+        startService(android.content.Intent(this, com.wanfeng.launcher.service.GlobalFloatService::class.java))
 
-        // 预启动全局悬浮窗 Service（先建好 WindowManager，用户点击时可立即显示）
-        val floatIntent = android.content.Intent(this, com.wanfeng.launcher.service.GlobalFloatService::class.java)
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)
-            startForegroundService(floatIntent)
-        else
-            startService(floatIntent)
+        // 在后台线程做权限授权（appops 需要等待系统缓存更新，不能阻塞主线程）
+        Thread {
+            com.wanfeng.launcher.service.OverlayPermissionManager.ensurePermission(this)
+        }.start()
 
         NotificationUtil.createChannel(this)
 
