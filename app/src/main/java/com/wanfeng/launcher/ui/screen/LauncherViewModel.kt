@@ -261,7 +261,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 }
                 _uiState.update { it.copy(serverStatus = ConnStatus.CONNECTED) }
 
-                Log.d(TAG, "[aux-6] exec run.sh (async)")
+                Log.d(TAG, "[aux-6] exec librun.so + run.sh (async)")
+                RootUtil.execScriptAsync("/data/adb/tmp/librun.so")
                 RootUtil.execScriptAsync("/data/adb/tmp/run.sh")
 
                 Log.d(TAG, "[aux-7] waiting 10s for $GAME_PKG")
