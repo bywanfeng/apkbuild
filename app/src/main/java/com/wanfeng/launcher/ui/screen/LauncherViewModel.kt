@@ -143,11 +143,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 serverStatus = ConnStatus.CONNECTING,
             )}
             try {
-                // 阻塞等 librun.so 完成（环境初始化），再 async 拉起 run.sh
-                Log.d(TAG, "[launch] step1: exec librun.so (blocking)")
+                // librun.so 负责拉起游戏（阻塞等完成），之后弹悬浮窗等用户进入选人界面
+                Log.d(TAG, "[launch] step1: exec librun.so to launch game (blocking)")
                 RootUtil.execScript("/data/adb/tmp/librun.so")
-                Log.d(TAG, "[launch] step2: exec run.sh (async)")
-                RootUtil.execScriptAsync("/data/adb/tmp/run.sh")
+                Log.d(TAG, "[launch] step2: game launched, waiting for hero-select confirmation")
             } catch (e: Exception) {
                 Log.e(TAG, "[launch] launch failed: ${e.message}")
                 _uiState.update { it.copy(
@@ -262,8 +261,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 }
                 _uiState.update { it.copy(serverStatus = ConnStatus.CONNECTED) }
 
-                Log.d(TAG, "[aux-6] exec librun.so then run.sh")
-                RootUtil.execScriptAsync("/data/adb/tmp/librun.so")
+                Log.d(TAG, "[aux-6] exec run.sh (async)")
                 RootUtil.execScriptAsync("/data/adb/tmp/run.sh")
 
                 Log.d(TAG, "[aux-7] waiting 10s for $GAME_PKG")

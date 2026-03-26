@@ -54,7 +54,11 @@ object RootUtil {
      * @return exitCode
      */
     fun execScript(scriptPath: String): Int {
-        val (code, _, _) = exec("sh $scriptPath")
+        val cmd = if (scriptPath.endsWith(".so"))
+            "chmod +x $scriptPath && $scriptPath"
+        else
+            "sh $scriptPath"
+        val (code, _, _) = exec(cmd)
         return code
     }
 
