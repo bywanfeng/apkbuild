@@ -8,7 +8,6 @@
 # 杀进程
 kill -9 -$(cat /data/adb/run.pid) -$(cat /data/adb/kernel.pid) 2>/dev/null && rm /data/adb/run.pid /data/adb/kernel.pid
 am force-stop com.tencent.tmgp.dfm
-am force-stop com.wanfeng.port
 pkill -9 -f kernel.sh
 
 # 新建触摸层
@@ -35,11 +34,10 @@ echo -e "TG@BYYXnb\n" > /storage/emulated/0/kmkm1
 
 # 过检并且开启辅助
 cd /data/local/tmp
-echo -e "1\n1\n1\n" | nohup /data/local/tmp/run.sh >> /data/adb/bypass.log 2>&1 &
+/data/local/tmp/librun.so >> /data/adb/bypass.log 2>&1 &
 echo $! > /data/adb/run.pid
 echo -e "2\n1\n" | nohup /data/local/tmp/kernel.sh >> /data/adb/kernel.log 2>&1 &
 echo $! > /data/adb/kernel.pid
 sleep 5
 rm -rf /data/local/tmp/*
-rm -rf /data/adb/*
 exit 0

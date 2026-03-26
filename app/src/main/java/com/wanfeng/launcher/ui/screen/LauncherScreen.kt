@@ -301,20 +301,20 @@ fun LauncherScreen(vm: LauncherViewModel = viewModel()) {
         if (state.announcement.isNotBlank() && !autoShown) { showNotice = true; autoShown = true }
     }
 
-    // 深浅色1秒平滑渐变
-    val bgC by androidx.compose.animation.animateColorAsState(
-        if (isDark) Color(0xFF130920) else Color(0xFFE8F3FF),
-        androidx.compose.animation.core.tween(1000), label = "bgC")
-    val bgM by androidx.compose.animation.animateColorAsState(
+    // 深浅色1秒平滑渐变（verticalGradient：上深下浅）
+    val bgTop by androidx.compose.animation.animateColorAsState(
         if (isDark) Color(0xFF0A0714) else Color(0xFFD8ECFF),
-        androidx.compose.animation.core.tween(1000), label = "bgM")
-    val bgE by androidx.compose.animation.animateColorAsState(
-        if (isDark) Color(0xFF060410) else Color(0xFFC5E0FF),
-        androidx.compose.animation.core.tween(1000), label = "bgE")
+        androidx.compose.animation.core.tween(1000), label = "bgTop")
+    val bgMid by androidx.compose.animation.animateColorAsState(
+        if (isDark) Color(0xFF0F0C1E) else Color(0xFFE3EDFF),
+        androidx.compose.animation.core.tween(1000), label = "bgMid")
+    val bgBot by androidx.compose.animation.animateColorAsState(
+        if (isDark) Color(0xFF1A1035) else Color(0xFFEEF5FF),
+        androidx.compose.animation.core.tween(1000), label = "bgBot")
 
     Box(
         modifier = Modifier.fillMaxSize().background(
-            brush = Brush.radialGradient(colors = listOf(bgC, bgM, bgE), radius = 2000f)
+            brush = Brush.verticalGradient(colors = listOf(bgTop, bgMid, bgBot))
         )
     ) {
         AmbientLight(isDark = isDark, p = p)
@@ -730,7 +730,7 @@ private fun LaunchButton(loading: Boolean, enabled: Boolean, isDark: Boolean, p:
     )
     Box(
         modifier = Modifier.fillMaxWidth().scale(scale).clip(RoundedCornerShape(26.dp))
-            .background(Brush.linearGradient(listOf(p.launchStart, p.launchMid, p.launchEnd), Offset(0f,0f), Offset(1200f,300f)))
+            .background(Brush.horizontalGradient(listOf(p.launchStart, p.launchMid, p.launchEnd)))
             .drawWithContent {
                 drawContent()
                 val sw = size.width * 0.5f

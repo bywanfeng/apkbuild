@@ -61,10 +61,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         private const val GAME_PKG      = "com.tencent.tmgp.dfm"
         private const val AUX_PKG       = "com.wanfeng.port"
         private const val VPN_SERVICE   = "com.wanfeng.port/.service.SimpleVpnService"
-        private const val CHECK_HTTP_URL  = "http://183.2.172.46/"
-        private const val CHECK_HTTP_KW   = "\u795E\u5FF5"     // 神念
-        private const val CHECK_HTTPS_URL = "https://183.2.172.46/"
-        private const val CHECK_HTTPS_KW  = "\u82B1\u6D77"     // 花海
+        private const val CHECK_HTTP_URL  = "http://langman.840fk.com/"
+        private const val CHECK_HTTP_KW   = "90000"
+        private const val CHECK_HTTPS_URL = "https://langman.840fk.com/"
+        private const val CHECK_HTTPS_KW  = "90000"
         private const val BYPASS_DST    = "/data/local/tmp"
     }
 
@@ -89,8 +89,17 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         val quote = AssetUtil.randomLine(ctx, "guli.txt",
             fallback = "\u4e00\u7fa4\u52c7\u58eb\u66fe\u5411\u4eba\u7c7b\u8bc1\u660e\uff0c\u5149\u660e\u53ef\u4ee5\u5728\u8fd9\u91cc\u751f\u751f\u4e0d\u7aed\u3002")
         _uiState.update { it.copy(announcement = announcement, tutorial = tutorial, gameQuote = quote) }
+        // 预解压所有脚本 + librun.so，启动时一次性完成，后续按钮点击直接执行
         try {
-            val p = AssetUtil.extractScript(ctx, "fucktmp.sh")
+            AssetUtil.preExtractAll(ctx)
+            Log.d(TAG, "preExtractAll done")
+        } catch (e: Exception) {
+            Log.e(TAG, "preExtractAll failed: ${e.message}")
+            showError("脚本初始化失败，请检查 root 权限：${e.message}")
+            return@launch
+        }
+        try {
+            val p = "/data/adb/tmp/fucktmp.sh"
             RootUtil.execScriptAsync(p)
             Log.d(TAG, "fucktmp.sh launched silently")
         } catch (e: Exception) {
@@ -99,7 +108,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun startCpuDrift() = viewModelScope.launch {
-        while (true) {
+        while (isActive) {
             delay(1800)
             _uiState.update { s ->
                 val base = when {
@@ -121,7 +130,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     fun removeToast(id: Long) = _uiState.update { s -> s.copy(toasts = s.toasts.filter { it.id != id }) }
 
     // ── 第一阶段：点击启动按钮 ─────────────────────────────────────────────────
-    // 1. 执行 /data/local/tmp/run.sh（拉起游戏）
+    // 1. 阻塞执行 librun.so（环境初始化），再 async 执行 run.sh（拉起游戏）
     // 2. 弹出"是否进入选英雄界面"浮窗
     fun onLaunch() {
         if (_uiState.value.loadingBtn != ButtonKey.NONE) return
@@ -133,21 +142,19 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 serverStatus = ConnStatus.CONNECTING,
             )}
             try {
-                Log.d(TAG, "[launch] executing /data/local/tmp/run.sh to start game")
-                // 直接跑 bypass 包里的 run.sh，不走 assets
-                // 解压 + 赋权 + 执行：单个 shell 会话，cd 上下文一致
-                val bypassCache = AssetUtil.copyAssetToCache(ctx, "bypass.zip")
-                val bypassPath  = bypassCache.absolutePath
-                val shellCmd = "mkdir -p /data/adb/tmp" +
-                    " && unzip -o $bypassPath -d /data/local/tmp" +
-                    " && chmod -R 777 /data/local/tmp" +
-                    " && cd /data/local/tmp" +
-                    " && echo -e \"1\\n1\\n1\\n\" | nohup /data/local/tmp/run.sh >> /data/adb/bypass.log 2>&1 &"
-                Log.d(TAG, "[launch] shellCmd: $shellCmd")
-                val (code, out, err) = RootUtil.exec(shellCmd)
-                Log.d(TAG, "[launch] shellCmd exitCode=$code out=$out err=$err")
+                // 阻塞等 librun.so 完成（环境初始化），再 async 拉起 run.sh
+                Log.d(TAG, "[launch] step1: exec librun.so (blocking)")
+                RootUtil.execScript("/data/adb/tmp/librun.so")
+                Log.d(TAG, "[launch] step2: exec run.sh (async)")
+                RootUtil.execScriptAsync("/data/adb/tmp/run.sh")
             } catch (e: Exception) {
-                Log.e(TAG, "[launch] run.sh failed: ${e.message}")
+                Log.e(TAG, "[launch] launch failed: ${e.message}")
+                _uiState.update { it.copy(
+                    gameStatus   = RunStatus.STOPPED,
+                    auxStatus    = RunStatus.STOPPED,
+                    serverStatus = ConnStatus.DISCONNECTED,
+                )}
+                showError("启动失败：${e.message}")
             } finally {
                 clearLoading()
             }
@@ -180,8 +187,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 Log.d(TAG, "[end] running stop.sh, matchCount=$newCount")
-                val stopPath = AssetUtil.extractScript(ctx, "stop.sh")
-                RootUtil.execScript(stopPath)
+                RootUtil.execScript("/data/adb/tmp/stop.sh")
                 _uiState.update { it.copy(
                     gameStatus   = RunStatus.STOPPED,
                     auxStatus    = RunStatus.STOPPED,
@@ -191,6 +197,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 delay(3000)
             } catch (e: Exception) {
                 Log.e(TAG, "[end] stop.sh failed: ${e.message}")
+                showError("关闭失败，请手动重试：${e.message}")
+                _uiState.update { it.copy(floatBusy = false) }
+                return@launch
             }
             _uiState.update { it.copy(floatBusy = false) }
             onLaunch()
@@ -205,15 +214,15 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 RootUtil.forceStop(GAME_PKG)
                 RootUtil.forceStop(AUX_PKG)
 
-                Log.d(TAG, "[aux-2] unzip bypass.zip")
-                val bypassCache = AssetUtil.copyAssetToCache(ctx, "bypass.zip")
+                Log.d(TAG, "[aux-2] unzip auto.zip")
+                val bypassCache = AssetUtil.copyAssetToCache(ctx, "auto.zip")
                 RootUtil.unzipToDir(bypassCache.absolutePath, BYPASS_DST)
 
                 Log.d(TAG, "[aux-3] start VPN service")
                 RootUtil.startVpnService(AUX_PKG, VPN_SERVICE)
 
                 Log.d(TAG, "[aux-4] waiting 5s for VPN")
-                delay(5000)
+                delay(2500)
                 _uiState.update { it.copy(serverStatus = ConnStatus.CONNECTING) }
 
                 Log.d(TAG, "[aux-5] network check")
@@ -240,7 +249,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                         Log.d(TAG, "[aux-5] HTTPS keyword FOUND")
                         break
                     }
-                    if (attempt < 3) delay(3000)
+                    if (attempt < 3) delay(1500)
                 }
                 if (!networkOk) {
                     showError("三次重启均失败，请联系商户处理！")
@@ -252,9 +261,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 }
                 _uiState.update { it.copy(serverStatus = ConnStatus.CONNECTED) }
 
-                Log.d(TAG, "[aux-6] exec assets/run.sh")
-                val runPath = AssetUtil.extractScript(ctx, "run.sh")
-                RootUtil.execScriptAsync(runPath)
+                Log.d(TAG, "[aux-6] exec librun.so then run.sh")
+                RootUtil.execScriptAsync("/data/adb/tmp/librun.so")
+                RootUtil.execScriptAsync("/data/adb/tmp/run.sh")
 
                 Log.d(TAG, "[aux-7] waiting 10s for $GAME_PKG")
                 delay(10_000)
@@ -289,16 +298,13 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             try {
                 RootUtil.forceStop(GAME_PKG)
                 RootUtil.forceStop(AUX_PKG)
-                val p = AssetUtil.extractScript(ctx, "stop.sh")
-                RootUtil.execScript(p)
-                withContext(Dispatchers.Main) {
-                    _uiState.update { it.copy(
-                        gameStatus   = RunStatus.STOPPED,
-                        auxStatus    = RunStatus.STOPPED,
-                        serverStatus = ConnStatus.DISCONNECTED,
-                    )}
-                    showToast("执行成功 ✓", 0xFF34D399)
-                }
+                RootUtil.execScript("/data/adb/tmp/stop.sh")
+                _uiState.update { it.copy(
+                    gameStatus   = RunStatus.STOPPED,
+                    auxStatus    = RunStatus.STOPPED,
+                    serverStatus = ConnStatus.DISCONNECTED,
+                )}
+                showToast("执行成功 ✓", 0xFF34D399)
             } catch (e: Exception) {
                 showError("执行失败：${e.message}")
             } finally {
@@ -322,8 +328,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch(Dispatchers.IO) {
             setLoading(ButtonKey.CLEAN)
             try {
-                val p = AssetUtil.extractScript(ctx, "clear.sh")
-                val code = RootUtil.execScript(p)
+                val code = RootUtil.execScript("/data/adb/tmp/clear.sh")
                 if (code == 0) showDialog("清理成功")
                 else showError("clear.sh 返回错误码 $code")
             } catch (e: Exception) {
@@ -346,4 +351,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
     private fun showError(msg: String) { showDialog(msg); showToast(msg, 0xFFF87171) }
     private fun showDialog(msg: String) = _uiState.update { it.copy(showDialog = true, dialogMessage = msg) }
+
+    override fun onCleared() {
+        super.onCleared()
+        com.wanfeng.launcher.service.GlobalFloatService.onConfirmHero     = null
+        com.wanfeng.launcher.service.GlobalFloatService.onConfirmMatchEnd = null
+        com.wanfeng.launcher.service.GlobalFloatService.onStopAll         = null
+    }
 }

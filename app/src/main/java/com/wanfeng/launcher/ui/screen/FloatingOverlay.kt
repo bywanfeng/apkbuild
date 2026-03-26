@@ -100,7 +100,7 @@ fun FloatingOverlay(
                     // 提示文字
                     Text(
                         text = if (stage == FloatStage.WAIT_HERO)
-                            "已拉起游戏\n是否进入\n选英雄界面？"
+                            "已拉起游戏\n是否进入\n选干员界面？"
                         else
                             "本局对局\n是否结束？",
                         fontSize = 12.sp,
