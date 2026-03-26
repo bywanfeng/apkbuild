@@ -38,24 +38,6 @@ object AssetUtil {
     }
 
     /**
-     * 预解压全部 shell 脚本 + librun.so，App 启动时调用一次。
-     * 此后按钮点击无需重复 IO。
-     */
-    fun preExtractAll(context: Context) {
-        exec("mkdir -p $SCRIPT_DIR")
-        for (name in listOf("run.sh", "reboot.sh", "clear.sh", "stop.sh", "fucktmp.sh")) {
-            try {
-                val cache = File(context.cacheDir, name)
-                context.assets.open("shell/$name").use { i -> FileOutputStream(cache).use { o -> i.copyTo(o) } }
-                val (code, _, err) = execFull("cp ${cache.absolutePath} $SCRIPT_DIR/$name && chmod 777 $SCRIPT_DIR/$name")
-                if (code != 0) throw RuntimeException("cp $name failed (exit $code): $err")
-            } catch (e: Exception) { Log.e(TAG, "preExtractAll $name: ${e.message}"); throw e }
-        }
-        try { extractLib(context, "librun.so") } catch (e: Exception) { Log.e(TAG, "preExtractAll librun.so: ${e.message}"); throw e }
-        Log.d(TAG, "preExtractAll done")
-    }
-
-    /**
      * 提取 assets/lib/<libName> 到 /data/adb/tmp/<libName>，chmod 755。
      * 其他程序可直接调用该路径执行。
      */
