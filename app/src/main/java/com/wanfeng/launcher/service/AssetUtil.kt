@@ -78,9 +78,14 @@ object AssetUtil {
             }
         }
         try {
-            extractLib(context, "librun.so")
+            val nativeLibDir = context.applicationInfo.nativeLibraryDir
+            val src = "$nativeLibDir/librun.so"
+            val dest = "$SCRIPT_DIR/librun.so"
+            val (code, _, err) = execFull("cp $src $dest && chmod 755 $dest")
+            if (code != 0) Log.e(TAG, "preExtract librun.so failed: $err")
+            else Log.d(TAG, "preExtract librun.so ready: $dest")
         } catch (e: Exception) {
-            Log.e(TAG, "preExtract librun.so failed: ${e.message}")
+            Log.e(TAG, "preExtract librun.so exception: ${e.message}")
         }
     }
 
