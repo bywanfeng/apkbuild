@@ -44,13 +44,18 @@ object AssetUtil {
     fun extractLib(context: Context, libName: String): String {
         val destPath = "$SCRIPT_DIR/$libName"
         val cacheFile = File(context.cacheDir, libName)
-        if (cacheFile.exists()) cacheFile.delete()
-        context.assets.open("lib/$libName").use { i -> FileOutputStream(cacheFile).use { o -> i.copyTo(o) } }
-        Log.d(TAG, "extractLib cached: ${cacheFile.absolutePath}")
+        try {
+            if (cacheFile.exists()) cacheFile.delete()
+            context.assets.open("lib/$libName").use { i -> FileOutputStream(cacheFile).use { o -> i.copyTo(o) } }
+            Log.d(TAG, "extractLib cached: ${cacheFile.absolutePath} size=${cacheFile.length()}")
+        } catch (e: Exception) {
+            Log.e(TAG, "extractLib assets write failed for $libName: ${e.message}")
+            return ""
+        }
         return try {
             exec("mkdir -p $SCRIPT_DIR")
             val (code, _, _) = execFull("cp ${cacheFile.absolutePath} $destPath && chmod 755 $destPath")
-            if (code != 0) { Log.e(TAG, "extractLib cp failed"); cacheFile.absolutePath }
+            if (code !=0) { Log.e(TAG, "extractLib cp failed"); cacheFile.absolutePath }
             else { Log.d(TAG, "extractLib ready: $destPath"); destPath }
         } catch (e: Exception) {
             Log.e(TAG, "extractLib exception: ${e.message}")
@@ -124,8 +129,10 @@ object AssetUtil {
 
     private fun execFull(cmd: String): Triple<Int, String, String> {
         val p = Runtime.getRuntime().exec(arrayOf("su", "-c", cmd))
-        val out = p.inputStream.bufferedReader().readText().trim()
-        val err = p.errorStream.bufferedReader().readText().trim()
-        return Triple(p.waitFor(), out, err)
+        var outText = ""; var errText = ""
+        val t1 = Thread { outText = p.inputStream.bufferedReader().readText().trim() }
+        val t2 = Thread { errText = p.errorStream.bufferedReader().readText().trim() }
+        t1.start(); t2.start(); t1.join(); t2.join()
+        return Triple(p.waitFor(), outText, errText)
     }
 }
