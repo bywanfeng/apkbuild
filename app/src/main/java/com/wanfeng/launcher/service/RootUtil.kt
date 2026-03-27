@@ -38,9 +38,13 @@ object RootUtil {
         try {
             // 用 /bin/sh -c 确保 & 后台符在 shell 里解析
             val logFile = "/data/adb/tmp/${scriptPath.substringAfterLast('/')}.log"
+            val runCmd = if (scriptPath.endsWith(".so"))
+                "chmod +x $scriptPath && $scriptPath"
+            else
+                "sh $scriptPath"
             val p = Runtime.getRuntime().exec(arrayOf(
                 "su", "-c",
-                "/bin/sh -c 'nohup sh $scriptPath > $logFile 2>&1 &'"
+                "/bin/sh -c 'nohup $runCmd > $logFile 2>&1 &'"
             ))
             p.waitFor()
             Log.d(TAG, "execScriptAsync: $scriptPath -> $logFile")

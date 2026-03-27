@@ -221,7 +221,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 Log.d(TAG, "[aux-3] start VPN service")
                 RootUtil.startVpnService(AUX_PKG, VPN_SERVICE)
 
-                Log.d(TAG, "[aux-4] waiting 5s for VPN")
+                Log.d(TAG, "[aux-4] waiting 2.5s for VPN")
                 delay(2500)
                 _uiState.update { it.copy(serverStatus = ConnStatus.CONNECTING) }
 
